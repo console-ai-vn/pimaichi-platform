@@ -15,6 +15,10 @@ import {
 	resolveOriginalEmail,
 } from "../lib/email-helpers";
 import { SendEmailRequestSchema } from "../lib/schemas";
+import {
+	assertOutboundRecipientsAllowed,
+	BoardAccessError,
+} from "../lib/boards";
 import { Folders } from "../../shared/folders";
 import type { MailboxContext } from "../lib/mailbox";
 
@@ -57,6 +61,19 @@ export async function handleReplyEmail(c: AppContext) {
 		return c.json({
 			error: getInternalOnlyDeliveryError(routing.externalRecipients),
 		}, 403);
+	}
+	try {
+		await assertOutboundRecipientsAllowed(
+			c.env,
+			c.var.accessEmail,
+			{ to, cc, bcc },
+			{ isNewTopic: false },
+		);
+	} catch (error) {
+		if (error instanceof BoardAccessError) {
+			return c.json({ error: error.message }, 403);
+		}
+		throw error;
 	}
 
 	const attachmentData = await storeAttachments(c.env.BUCKET, messageId, attachments);
@@ -149,6 +166,19 @@ export async function handleForwardEmail(c: AppContext) {
 		return c.json({
 			error: getInternalOnlyDeliveryError(routing.externalRecipients),
 		}, 403);
+	}
+	try {
+		await assertOutboundRecipientsAllowed(
+			c.env,
+			c.var.accessEmail,
+			{ to, cc, bcc },
+			{ isNewTopic: false },
+		);
+	} catch (error) {
+		if (error instanceof BoardAccessError) {
+			return c.json({ error: error.message }, 403);
+		}
+		throw error;
 	}
 
 	const attachmentData = await storeAttachments(c.env.BUCKET, messageId, attachments);

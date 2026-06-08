@@ -27,10 +27,18 @@ export function useMailbox(mailboxId: string | undefined) {
 export function useCreateMailbox() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: ({ email, name }: { email: string; name: string }) =>
-			api.createMailbox(email, name),
+		mutationFn: ({
+			email,
+			name,
+			settings,
+		}: {
+			email: string;
+			name: string;
+			settings?: Mailbox["settings"];
+		}) => api.createMailbox(email, name, settings),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.all });
+			qc.invalidateQueries({ queryKey: queryKeys.boards.all });
 		},
 	});
 }
@@ -46,6 +54,7 @@ export function useUpdateMailbox() {
 		onSuccess: (_data, { mailboxId }) => {
 			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.detail(mailboxId) });
 			qc.invalidateQueries({ queryKey: queryKeys.mailboxes.all });
+			qc.invalidateQueries({ queryKey: queryKeys.boards.all });
 		},
 	});
 }

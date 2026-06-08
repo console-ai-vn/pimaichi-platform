@@ -2,7 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
 
-import type { ContactProfile, ConversationEvent, ConversationState, Email, Folder, InternalNote, Mailbox } from "~/types";
+import type { ContactProfile, ConversationEvent, ConversationState, Email, Folder, ForumBoard, InternalNote, Mailbox } from "~/types";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -110,6 +110,9 @@ const api = {
 			accessEmail: string | null;
 			isAdmin: boolean;
 		}>("/api/v1/config"),
+
+	// Boards
+	listBoards: () => get<ForumBoard[]>("/api/v1/boards"),
 
 	// Mailboxes
 	listMailboxes: () => get<Mailbox[]>("/api/v1/mailboxes"),

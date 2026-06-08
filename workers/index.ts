@@ -53,6 +53,13 @@ import {
 } from "./lib/audit";
 import { normalizeRetentionPolicyOptions } from "./lib/retention";
 import {
+	assertOutboundRecipientsAllowed,
+	BoardAccessError,
+	isNewTopicSend,
+	listAccessibleBoards,
+	loadMailboxSettings,
+} from "./lib/boards";
+import {
 	decodeAvatarUpload,
 	decodeCoverUpload,
 	profileAvatarKey,
@@ -347,6 +354,11 @@ app.use("/api/v1/mailboxes/:mailboxId/*", requireMailbox);
 
 // -- Config ---------------------------------------------------------
 
+app.get("/api/v1/boards", async (c) => {
+	const boards = await listAccessibleBoards(c.env, c.var.accessEmail);
+	return c.json(boards);
+});
+
 app.get("/api/v1/config", async (c) => {
 	const config = await getDomainConfig(c.env);
 	const emailAddresses = filterMailboxIdsForAccess(
@@ -452,11 +464,16 @@ app.get("/api/v1/mailboxes", async (c) => {
 		if (role) explicitVisible.add(mailbox.id);
 	}
 
-	return c.json(
-		allMailboxes
-			.filter((mailbox) => explicitVisible.has(mailbox.id))
-			.map((mailbox) => ({ ...mailbox, name: mailbox.id })),
+	const visible = allMailboxes.filter((mailbox) =>
+		explicitVisible.has(mailbox.id),
 	);
+	const enriched = await Promise.all(
+		visible.map(async (mailbox) => {
+			const settings = await loadMailboxSettings(c.env.BUCKET, mailbox.id);
+			return { ...mailbox, name: mailbox.id, settings };
+		}),
+	);
+	return c.json(enriched);
 });
 
 app.post("/api/v1/mailboxes", async (c) => {
@@ -613,6 +630,19 @@ app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 		return c.json({
 			error: getInternalOnlyDeliveryError(routing.externalRecipients),
 		}, 403);
+	}
+	try {
+		await assertOutboundRecipientsAllowed(
+			c.env,
+			c.var.accessEmail,
+			{ to, cc, bcc },
+			{ isNewTopic: isNewTopicSend({ in_reply_to, thread_id }) },
+		);
+	} catch (error) {
+		if (error instanceof BoardAccessError) {
+			return c.json({ error: error.message }, 403);
+		}
+		throw error;
 	}
 	const attachmentData = await storeAttachments(c.env.BUCKET, messageId, attachments);
 

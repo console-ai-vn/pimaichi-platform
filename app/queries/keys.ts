@@ -32,6 +32,9 @@ export const queryKeys = {
 			["search", mailboxId, query, page] as const,
 	},
 	config: ["config"] as const,
+	boards: {
+		all: ["boards"] as const,
+	},
 	audit: {
 		list: (mailboxId: string, params: Record<string, string>) =>
 			["audit", mailboxId, params] as const,

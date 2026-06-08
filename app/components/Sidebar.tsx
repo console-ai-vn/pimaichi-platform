@@ -13,11 +13,13 @@ import {
 	PlusIcon,
 	TrashIcon,
 	TrayIcon,
+	UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { NavLink, useNavigate, useParams } from "react-router";
 import { Folders, SYSTEM_FOLDER_IDS } from "shared/folders";
 import { useCreateFolder, useFolders } from "~/queries/folders";
+import { useBoards } from "~/queries/boards";
 import { useMailbox } from "~/queries/mailboxes";
 import { useUIStore } from "~/hooks/useUIStore";
 
@@ -80,6 +82,7 @@ export default function Sidebar() {
 	const createFolderMutation = useCreateFolder();
 	const { startCompose, closeSidebar } = useUIStore();
 	const { data: currentMailbox } = useMailbox(mailboxId);
+	const { data: boards = [] } = useBoards();
 	const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
 	const [newFolderName, setNewFolderName] = useState("");
 
@@ -146,14 +149,22 @@ export default function Sidebar() {
 			</div>
 
 			{/* Compose */}
-			<div className="px-3 py-3">
+			<div className="px-3 py-3 space-y-2">
 				<Button
 					variant="primary"
 					icon={<PencilSimpleIcon size={16} />}
-					onClick={() => startCompose()}
+					onClick={() => startCompose({ mode: "new", forumTopic: true })}
 					className="w-full"
 				>
-					Compose
+					New topic
+				</Button>
+				<Button
+					variant="secondary"
+					icon={<PaperPlaneTiltIcon size={16} />}
+					onClick={() => startCompose({ mode: "new" })}
+					className="w-full"
+				>
+					Compose email
 				</Button>
 			</div>
 
@@ -169,6 +180,25 @@ export default function Sidebar() {
 						onClick={handleNavClick}
 					/>
 				))}
+
+				{boards.length > 0 && (
+					<div className="pt-5">
+						<div className="px-3 mb-1.5">
+							<span className="text-xs uppercase tracking-wider font-semibold text-kumo-subtle">
+								Boards
+							</span>
+						</div>
+						{boards.map((board) => (
+							<FolderLink
+								key={board.id}
+								to={`/mailbox/${board.id}/emails/inbox`}
+								icon={<UsersThreeIcon size={18} weight="regular" />}
+								label={board.boardName}
+								onClick={handleNavClick}
+							/>
+						))}
+					</div>
+				)}
 
 				{/* Custom folders */}
 				{customFolders.length > 0 && (

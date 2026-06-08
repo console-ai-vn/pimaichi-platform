@@ -50,6 +50,9 @@ export default function HomeRoute() {
 	const [newPrefix, setNewPrefix] = useState("");
 	const [selectedDomain, setSelectedDomain] = useState("");
 	const [newName, setNewName] = useState("");
+	const [isPublicBoard, setIsPublicBoard] = useState(false);
+	const [boardName, setBoardName] = useState("");
+	const [boardDescription, setBoardDescription] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [createError, setCreateError] = useState<string | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -103,11 +106,23 @@ export default function HomeRoute() {
 		const name = newName || newPrefix;
 		setIsCreating(true);
 		try {
-			await createMailbox.mutateAsync({ email, name });
-			toastManager.add({ title: "Mailbox created successfully!" });
+			const settings = isPublicBoard
+				? {
+						isPublicBoard: true,
+						boardName: boardName.trim() || name,
+						boardDescription: boardDescription.trim() || undefined,
+					}
+				: undefined;
+			await createMailbox.mutateAsync({ email, name, settings });
+			toastManager.add({
+				title: isPublicBoard ? "Board created!" : "Mailbox created successfully!",
+			});
 			setIsCreateOpen(false);
 			setNewPrefix("");
 			setNewName("");
+			setIsPublicBoard(false);
+			setBoardName("");
+			setBoardDescription("");
 		} catch (err: unknown) {
 			const message = (err instanceof Error ? err.message : null) || "Failed to create mailbox";
 			setCreateError(message);
@@ -148,13 +163,16 @@ export default function HomeRoute() {
 				<div className="mb-8">
 					<div className="flex items-center justify-between">
 						<h1 className="text-2xl font-bold text-kumo-default">Mailboxes</h1>
-						{!isConfigured && (
+						{(isAdmin || !isConfigured) && (
 							<Button
 								variant="primary"
 								icon={<PlusIcon size={16} />}
-								onClick={() => setIsCreateOpen(true)}
+								onClick={() => {
+									setIsPublicBoard(isAdmin);
+									setIsCreateOpen(true);
+								}}
 							>
-								New Mailbox
+								{isAdmin ? "New board" : "New Mailbox"}
 							</Button>
 						)}
 					</div>
@@ -187,8 +205,15 @@ export default function HomeRoute() {
 									avatarVersion={account.settings?.avatarUpdatedAt}
 								/>
 								<div className="min-w-0 flex-1">
-									<div className="text-sm font-medium text-kumo-default truncate">
-										{account.name}
+									<div className="flex items-center gap-2">
+										<div className="text-sm font-medium text-kumo-default truncate">
+											{account.settings?.boardName || account.settings?.fromName || account.name}
+										</div>
+										{account.settings?.isPublicBoard && (
+											<span className="shrink-0 rounded-full bg-kumo-brand/10 px-2 py-0.5 text-xs font-medium text-kumo-brand">
+												Board
+											</span>
+										)}
 									</div>
 									<div className="text-sm text-kumo-subtle">
 										{account.email}
@@ -237,7 +262,10 @@ export default function HomeRoute() {
 								<Button
 									variant="primary"
 									icon={<PlusIcon size={16} />}
-									onClick={() => setIsCreateOpen(true)}
+									onClick={() => {
+									setIsPublicBoard(isAdmin);
+									setIsCreateOpen(true);
+								}}
 								>
 									Create Mailbox
 								</Button>
@@ -251,7 +279,7 @@ export default function HomeRoute() {
 			<Dialog.Root open={isCreateOpen} onOpenChange={setIsCreateOpen}>
 				<Dialog size="sm" className="p-6">
 					<Dialog.Title className="text-base font-semibold mb-5">
-						Create New Mailbox
+						{isAdmin ? "Create board" : "Create New Mailbox"}
 					</Dialog.Title>
 					<form onSubmit={handleCreate} className="space-y-4">
 						{createError && (
@@ -305,6 +333,40 @@ export default function HomeRoute() {
 							value={newName}
 							onChange={(e) => setNewName(e.target.value)}
 						/>
+						{isAdmin && (
+							<>
+								<label className="flex items-center gap-2 text-sm text-kumo-default">
+									<input
+										type="checkbox"
+										checked={isPublicBoard}
+										onChange={(e) => setIsPublicBoard(e.target.checked)}
+									/>
+									Public board (team can post here)
+								</label>
+								{isPublicBoard && (
+									<>
+										<Input
+											label="Board name"
+											placeholder="Sales"
+											size="sm"
+											value={boardName}
+											onChange={(e) => setBoardName(e.target.value)}
+										/>
+										<label className="block space-y-1.5">
+											<span className="text-sm font-medium text-kumo-default">
+												Board description
+											</span>
+											<textarea
+												className="min-h-20 w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
+												value={boardDescription}
+												onChange={(e) => setBoardDescription(e.target.value)}
+												placeholder="What this board is for"
+											/>
+										</label>
+									</>
+								)}
+							</>
+						)}
 						<div className="flex justify-end gap-2 pt-2">
 							<Dialog.Close
 								render={(props) => (

@@ -1,7 +1,10 @@
 import { Button, Input, Loader, useKumoToastManager } from "@cloudflare/kumo";
 import { CameraIcon, FloppyDiskIcon, LinkIcon, MapPinIcon } from "@phosphor-icons/react";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
+import api from "~/services/api";
+import { queryKeys } from "~/queries/keys";
 import MailboxAvatar from "~/components/MailboxAvatar";
 import MailboxCover from "~/components/MailboxCover";
 import {
@@ -40,6 +43,14 @@ export default function SettingsRoute() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [avatarVersion, setAvatarVersion] = useState<string | null>(null);
 	const [coverVersion, setCoverVersion] = useState<string | null>(null);
+	const [isPublicBoard, setIsPublicBoard] = useState(false);
+	const [boardName, setBoardName] = useState("");
+	const [boardDescription, setBoardDescription] = useState("");
+	const { data: config } = useQuery({
+		queryKey: queryKeys.config,
+		queryFn: () => api.getConfig(),
+	});
+	const isAdmin = config?.isAdmin ?? false;
 
 	useEffect(() => {
 		if (!mailbox) return;
@@ -49,6 +60,9 @@ export default function SettingsRoute() {
 		setWebsite(mailbox.settings?.website || "");
 		setAvatarVersion(mailbox.settings?.avatarUpdatedAt ?? null);
 		setCoverVersion(mailbox.settings?.coverUpdatedAt ?? null);
+		setIsPublicBoard(mailbox.settings?.isPublicBoard === true);
+		setBoardName(mailbox.settings?.boardName || "");
+		setBoardDescription(mailbox.settings?.boardDescription || "");
 	}, [mailbox]);
 
 	const handleSave = async () => {
@@ -60,6 +74,17 @@ export default function SettingsRoute() {
 			bio: bio.trim() || undefined,
 			location: location.trim() || undefined,
 			website: website.trim() || undefined,
+			...(isAdmin
+				? {
+						isPublicBoard,
+						boardName: isPublicBoard
+							? boardName.trim() || displayName.trim() || mailbox.name
+							: undefined,
+						boardDescription: isPublicBoard
+							? boardDescription.trim() || undefined
+							: undefined,
+					}
+				: {}),
 		};
 		try {
 			await updateMailbox.mutateAsync({ mailboxId, settings });
@@ -243,6 +268,40 @@ export default function SettingsRoute() {
 							placeholder="vsbg.vn"
 						/>
 						<Input label="Email" type="email" value={mailbox.email} disabled />
+						{isAdmin && (
+							<div className="space-y-3 rounded-lg border border-kumo-line bg-kumo-recessed p-4">
+								<h3 className="text-sm font-semibold text-kumo-default">Board settings</h3>
+								<label className="flex items-center gap-2 text-sm text-kumo-default">
+									<input
+										type="checkbox"
+										checked={isPublicBoard}
+										onChange={(e) => setIsPublicBoard(e.target.checked)}
+									/>
+									Public board (curated forum)
+								</label>
+								{isPublicBoard && (
+									<>
+										<Input
+											label="Board name"
+											value={boardName}
+											onChange={(e) => setBoardName(e.target.value)}
+											placeholder="Sales"
+										/>
+										<label className="block space-y-1.5">
+											<span className="text-sm font-medium text-kumo-default">
+												Board description
+											</span>
+											<textarea
+												className="min-h-20 w-full resize-y rounded-lg border border-kumo-line bg-kumo-base px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
+												value={boardDescription}
+												onChange={(e) => setBoardDescription(e.target.value)}
+												placeholder="What this board is for"
+											/>
+										</label>
+									</>
+								)}
+							</div>
+						)}
 					</div>
 				</div>
 			</div>

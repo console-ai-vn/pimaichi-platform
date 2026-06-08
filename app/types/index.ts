@@ -15,6 +15,9 @@ export interface MailboxSettings {
 	website?: string;
 	avatarUpdatedAt?: string;
 	coverUpdatedAt?: string;
+	isPublicBoard?: boolean;
+	boardName?: string;
+	boardDescription?: string;
 	forwarding?: { enabled: boolean; email: string };
 	signature?: SignatureSettings;
 	autoReply?: { enabled: boolean; subject: string; message: string };
@@ -26,6 +29,16 @@ export interface Mailbox {
 	email: string;
 	name: string;
 	settings?: MailboxSettings;
+}
+
+export interface ForumBoard {
+	id: string;
+	email: string;
+	boardName: string;
+	boardDescription?: string;
+	canPost: boolean;
+	avatarUpdatedAt?: string;
+	coverUpdatedAt?: string;
 }
 
 export interface Email {

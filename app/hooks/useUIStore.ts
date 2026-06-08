@@ -12,6 +12,8 @@ export interface ComposeOptions {
 	originalEmail?: Email | null;
 	/** When editing a draft, this holds the draft email to pre-fill the composer */
 	draftEmail?: Email | null;
+	/** Curated forum topic flow — board picker instead of free-form To */
+	forumTopic?: boolean;
 }
 
 interface UIState {

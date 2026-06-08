@@ -2,7 +2,7 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
 
-import { Banner, Button, Input } from "@cloudflare/kumo";
+import { Banner, Button, Input, Select } from "@cloudflare/kumo";
 import { FloppyDiskIcon, ImageIcon, PaperPlaneTiltIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import { useRef } from "react";
 import { useParams } from "react-router";
@@ -35,6 +35,8 @@ export default function ComposePanel() {
 		isSavingDraft,
 		isSending,
 		formTitle,
+		isForumTopic,
+		postableBoards,
 		handleSaveDraft,
 		handleSend,
 		closeCompose,
@@ -78,32 +80,59 @@ export default function ComposePanel() {
 					{error && <Banner variant="error" text={error} />}
 
 					<div className="space-y-3">
-						<div className="flex items-center gap-2">
-							<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">
-								To
-							</label>
-							<div className="flex-1 flex items-center gap-2 min-w-0">
-								<Input
-									type="text"
-									placeholder="recipient@example.com"
-									size="sm"
-									value={to}
-									onChange={(e) => setTo(e.target.value)}
-									required
-								/>
-								{!showCcBcc && (
-									<button
-										type="button"
-										onClick={() => setShowCcBcc(true)}
-										className="shrink-0 text-xs text-kumo-link hover:text-kumo-link-hover font-medium"
-									>
-										CC / BCC
-									</button>
-								)}
+						{isForumTopic ? (
+							<div className="flex items-center gap-2">
+								<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">
+									Board
+								</label>
+								<div className="flex-1 min-w-0">
+									{postableBoards.length > 0 ? (
+										<Select
+											aria-label="Board"
+											value={to}
+											onValueChange={(value) => value && setTo(value)}
+										>
+											{postableBoards.map((board) => (
+												<Select.Option key={board.id} value={board.email}>
+													{board.boardName}
+												</Select.Option>
+											))}
+										</Select>
+									) : (
+										<p className="text-sm text-kumo-subtle">
+											No boards available. Ask an admin to create one.
+										</p>
+									)}
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className="flex items-center gap-2">
+								<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">
+									To
+								</label>
+								<div className="flex-1 flex items-center gap-2 min-w-0">
+									<Input
+										type="text"
+										placeholder="recipient@example.com"
+										size="sm"
+										value={to}
+										onChange={(e) => setTo(e.target.value)}
+										required
+									/>
+									{!showCcBcc && (
+										<button
+											type="button"
+											onClick={() => setShowCcBcc(true)}
+											className="shrink-0 text-xs text-kumo-link hover:text-kumo-link-hover font-medium"
+										>
+											CC / BCC
+										</button>
+									)}
+								</div>
+							</div>
+						)}
 
-						{showCcBcc && (
+						{!isForumTopic && showCcBcc && (
 							<div className="flex items-center gap-2">
 								<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">
 									CC
@@ -120,7 +149,7 @@ export default function ComposePanel() {
 							</div>
 						)}
 
-						{showCcBcc && (
+						{!isForumTopic && showCcBcc && (
 							<div className="flex items-center gap-2">
 								<label className="text-sm font-medium text-kumo-subtle w-14 shrink-0">
 									BCC
@@ -144,7 +173,7 @@ export default function ComposePanel() {
 							<div className="flex-1">
 								<Input
 									type="text"
-									placeholder="Email subject"
+									placeholder={isForumTopic ? "Topic title" : "Email subject"}
 									size="sm"
 									value={subject}
 									onChange={(e) => setSubject(e.target.value)}
@@ -229,10 +258,14 @@ export default function ComposePanel() {
 								variant="primary"
 								size="sm"
 								loading={isSending}
-								disabled={isSavingDraft || isSending}
+								disabled={
+									isSavingDraft ||
+									isSending ||
+									(isForumTopic && postableBoards.length === 0)
+								}
 								icon={<PaperPlaneTiltIcon size={14} />}
 							>
-								{isSending ? "Sending..." : "Send"}
+								{isSending ? (isForumTopic ? "Posting..." : "Sending...") : isForumTopic ? "Post" : "Send"}
 							</Button>
 						</div>
 					</div>

@@ -43,9 +43,9 @@ const FOLDER_EMPTY_STATES: Record<
 > = {
 	[Folders.INBOX]: {
 		icon: <TrayIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "Your inbox is empty",
+		title: "Feed is empty",
 		description:
-			"New emails will appear here when they arrive. Send an email to get the conversation started.",
+			"Start a topic on an admin board or wait for new conversations to arrive.",
 		showCompose: true,
 	},
 	[Folders.SENT]: {
@@ -129,7 +129,7 @@ function FolderEmptyState({
 					icon={<PencilSimpleIcon size={16} />}
 					onClick={onCompose}
 				>
-					Compose
+					New topic
 				</Button>
 			)}
 		</div>
@@ -331,7 +331,7 @@ export default function EmailListRoute() {
 					) : (
 						<FolderEmptyState
 							folder={folder}
-							onCompose={() => startCompose()}
+							onCompose={() => startCompose({ mode: "new", forumTopic: true })}
 						/>
 					)}
 				</div>
