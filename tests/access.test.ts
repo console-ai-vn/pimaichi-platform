@@ -36,14 +36,12 @@ test("assertMailboxAccess allows configured members into shared mailboxes", () =
 	);
 });
 
-test("assertMailboxAccess rejects members outside configured shared mailboxes", () => {
-	assert.throws(
-		() =>
-			assertMailboxAccess("ceo@example.com", "finance@example.com", {
-				allowedAccessEmails: ["ceo@example.com"],
-				allowedMailboxIds: ["admin@example.com"],
-			}),
-		/mailbox/i,
+test("assertMailboxAccess allows platform admins into any mailbox", () => {
+	assert.doesNotThrow(() =>
+		assertMailboxAccess("ceo@example.com", "finance@example.com", {
+			allowedAccessEmails: ["ceo@example.com"],
+			allowedMailboxIds: ["admin@example.com"],
+		}),
 	);
 });
 
@@ -57,7 +55,7 @@ test("filterMailboxIdsForAccess exposes only the signed-in mailbox", () => {
 	);
 });
 
-test("filterMailboxIdsForAccess exposes shared mailboxes to configured members", () => {
+test("filterMailboxIdsForAccess exposes every mailbox to platform admins", () => {
 	assert.deepEqual(
 		filterMailboxIdsForAccess(
 			["admin@example.com", "finance@example.com"],
@@ -67,7 +65,7 @@ test("filterMailboxIdsForAccess exposes shared mailboxes to configured members",
 				allowedMailboxIds: ["admin@example.com"],
 			},
 		),
-		["admin@example.com"],
+		["admin@example.com", "finance@example.com"],
 	);
 });
 

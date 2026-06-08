@@ -55,10 +55,12 @@ import { normalizeRetentionPolicyOptions } from "./lib/retention";
 import {
 	assertOutboundRecipientsAllowed,
 	BoardAccessError,
-	isNewTopicSend,
 	listAccessibleBoards,
 	loadMailboxSettings,
+	resolveBoardNewTopicPosting,
 } from "./lib/boards";
+import { seedMailboxTeamAccess } from "./lib/board-access";
+import { getBoardMeta, isPlatformAdmin } from "./lib/board-settings";
 import {
 	decodeAvatarUpload,
 	decodeCoverUpload,
@@ -66,6 +68,7 @@ import {
 	profileCoverKey,
 } from "./lib/profile-avatar";
 import { normalizeEmail } from "./lib/access";
+import { homeApp } from "./routes/home-feed";
 
 type AppContext = Context<MailboxContext>;
 const ALLOW_FORWARDING = true;
@@ -122,6 +125,7 @@ const ContactProfilePatchBody = z.object({
 	memory: z.string().trim().max(1200).nullable().optional(),
 	location: z.string().trim().max(160).nullable().optional(),
 	website: z.string().trim().max(240).nullable().optional(),
+	blocked: z.boolean().optional(),
 });
 
 // -- Helpers --------------------------------------------------------
@@ -359,6 +363,8 @@ app.get("/api/v1/boards", async (c) => {
 	return c.json(boards);
 });
 
+app.route("/api/v1/home", homeApp);
+
 app.get("/api/v1/config", async (c) => {
 	const config = await getDomainConfig(c.env);
 	const emailAddresses = filterMailboxIdsForAccess(
@@ -467,6 +473,18 @@ app.get("/api/v1/mailboxes", async (c) => {
 	const visible = allMailboxes.filter((mailbox) =>
 		explicitVisible.has(mailbox.id),
 	);
+	const config = await getDomainConfig(c.env);
+	if (isPlatformAdmin(c.var.accessEmail, config.accessEmailAddresses)) {
+		const actor = c.var.accessEmail || visible[0]?.id || "system";
+		c.executionCtx.waitUntil(
+			Promise.all(
+				visible.map((mailbox) =>
+					seedMailboxTeamAccess(c.env, mailbox.id, actor),
+				),
+			),
+		);
+	}
+
 	const enriched = await Promise.all(
 		visible.map(async (mailbox) => {
 			const settings = await loadMailboxSettings(c.env.BUCKET, mailbox.id);
@@ -500,6 +518,7 @@ app.post("/api/v1/mailboxes", async (c) => {
 	await c.env.BUCKET.put(key, JSON.stringify(finalSettings));
 	const stub = c.env.MAILBOX.get(c.env.MAILBOX.idFromName(email));
 	await stub.getFolders();
+	await seedMailboxTeamAccess(c.env, email, getAuditActor(c, email));
 	void recordAudit(stub, {
 		actor_email: getAuditActor(c, email),
 		action: "mailbox.create",
@@ -537,6 +556,7 @@ app.put("/api/v1/mailboxes/:mailboxId", async (c) => {
 
 	const { settings } = (await c.req.json()) as { settings: Record<string, unknown> };
 	await c.env.BUCKET.put(key, JSON.stringify(settings));
+	await seedMailboxTeamAccess(c.env, mailboxId, getAuditActor(c, mailboxId));
 	void recordAudit(stub, {
 		actor_email: getAuditActor(c, mailboxId),
 		action: "mailbox.settings_update",
@@ -632,11 +652,16 @@ app.post("/api/v1/mailboxes/:mailboxId/emails", async (c: AppContext) => {
 		}, 403);
 	}
 	try {
+		const isBoardNewTopic = await resolveBoardNewTopicPosting(
+			c.env,
+			{ to, cc, bcc },
+			{ in_reply_to, thread_id },
+		);
 		await assertOutboundRecipientsAllowed(
 			c.env,
 			c.var.accessEmail,
 			{ to, cc, bcc },
-			{ isNewTopic: isNewTopicSend({ in_reply_to, thread_id }) },
+			{ isNewTopic: isBoardNewTopic },
 		);
 	} catch (error) {
 		if (error instanceof BoardAccessError) {
@@ -954,6 +979,50 @@ app.get("/api/v1/mailboxes/:mailboxId/threads/:threadId/events", async (c: AppCo
 app.post("/api/v1/mailboxes/:mailboxId/threads/:threadId/read", async (c: AppContext) => {
 	await c.var.mailboxStub.markThreadRead(c.req.param("threadId")!);
 	return c.json({ status: "marked_read" });
+});
+
+app.post("/api/v1/mailboxes/:mailboxId/threads/:threadId/move", async (c: AppContext) => {
+	const threadId = c.req.param("threadId")!;
+	const { folderId } = (await c.req.json()) as { folderId: string };
+	const result = await (c.var.mailboxStub as any).moveThread(threadId, folderId);
+	if (!result) return c.json({ error: "Conversation or folder not found" }, 404);
+	void recordAudit(c.var.mailboxStub, {
+		actor_email: getAuditActor(c, c.req.param("mailboxId")!),
+		action: "conversation.move",
+		target_type: "thread",
+		target_id: threadId,
+		payload: { folderId, movedCount: result.movedCount },
+	});
+	return c.json({ status: "moved", ...result });
+});
+
+app.delete("/api/v1/mailboxes/:mailboxId/threads/:threadId", async (c: AppContext) => {
+	try {
+		requirePermission(c, "delete");
+	} catch (error) {
+		return handlePermissionError(c, error);
+	}
+
+	const threadId = c.req.param("threadId")!;
+	const result = await (c.var.mailboxStub as any).deleteThread(threadId);
+	if (!result) return c.json({ error: "Conversation not found" }, 404);
+
+	const bucketKeys: string[] = [];
+	for (const item of result.deleted) {
+		for (const att of item.attachments) {
+			bucketKeys.push(`attachments/${item.emailId}/${att.id}/${att.filename}`);
+		}
+	}
+	if (bucketKeys.length > 0) await c.env.BUCKET.delete(bucketKeys);
+
+	void recordAudit(c.var.mailboxStub, {
+		actor_email: getAuditActor(c, c.req.param("mailboxId")!),
+		action: "conversation.delete",
+		target_type: "thread",
+		target_id: threadId,
+		payload: { emailCount: result.deleted.length },
+	});
+	return c.body(null, 204);
 });
 
 // -- Reply / Forward ------------------------------------------------

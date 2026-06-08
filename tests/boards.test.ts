@@ -3,12 +3,19 @@ import test from "node:test";
 import {
 	getBoardMeta,
 	isNewTopicSend,
+	shouldTreatAsBoardNewTopic,
 } from "../workers/lib/board-settings.ts";
 
 test("isNewTopicSend treats missing reply metadata as a new topic", () => {
 	assert.equal(isNewTopicSend({}), true);
 	assert.equal(isNewTopicSend({ in_reply_to: "msg-1" }), false);
 	assert.equal(isNewTopicSend({ thread_id: "thread-1" }), false);
+});
+
+test("shouldTreatAsBoardNewTopic only applies board rules to new threads on boards", () => {
+	assert.equal(shouldTreatAsBoardNewTopic(true, true), true);
+	assert.equal(shouldTreatAsBoardNewTopic(true, false), false);
+	assert.equal(shouldTreatAsBoardNewTopic(false, true), false);
 });
 
 test("getBoardMeta reads public board fields from mailbox settings", () => {

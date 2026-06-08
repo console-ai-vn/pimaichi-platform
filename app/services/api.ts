@@ -2,7 +2,20 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
 
-import type { ContactProfile, ConversationEvent, ConversationState, Email, Folder, ForumBoard, InternalNote, Mailbox } from "~/types";
+import type {
+	ContactProfile,
+	ConversationEvent,
+	ConversationState,
+	Email,
+	Folder,
+	ForumBoard,
+	HomeComment,
+	HomeCommentListResponse,
+	HomeTopic,
+	HomeTopicListResponse,
+	InternalNote,
+	Mailbox,
+} from "~/types";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -158,6 +171,13 @@ const api = {
 		get<Email[]>(`/api/v1/mailboxes/${mailboxId}/threads/${threadId}`, { signal: opts?.signal }),
 	markThreadRead: (mailboxId: string, threadId: string) =>
 		post<void>(`/api/v1/mailboxes/${mailboxId}/threads/${threadId}/read`),
+	deleteThread: (mailboxId: string, threadId: string) =>
+		del<void>(`/api/v1/mailboxes/${mailboxId}/threads/${threadId}`),
+	moveThread: (mailboxId: string, threadId: string, folderId: string) =>
+		post<{ status: string; threadId: string; movedCount: number; folderId: string }>(
+			`/api/v1/mailboxes/${mailboxId}/threads/${threadId}/move`,
+			{ folderId },
+		),
 	getConversationState: (mailboxId: string, threadId: string) =>
 		get<ConversationState>(`/api/v1/mailboxes/${mailboxId}/threads/${threadId}/state`),
 	updateConversationState: (mailboxId: string, threadId: string, state: unknown) =>
@@ -281,6 +301,47 @@ const api = {
 	) => post(`/api/v1/mailboxes/${mailboxId}/permissions`, payload),
 	revokeMailboxPermission: (mailboxId: string, userEmail: string) =>
 		del<void>(`/api/v1/mailboxes/${mailboxId}/permissions/${encodeURIComponent(userEmail)}`),
+
+	// Home feed
+	listHomeTopics: (page = 1, limit = 20) =>
+		get<HomeTopicListResponse>("/api/v1/home/topics", {
+			params: { page: String(page), limit: String(limit) },
+		}),
+	getHomeTopic: (topicId: string) =>
+		get<HomeTopic>(`/api/v1/home/topics/${encodeURIComponent(topicId)}`),
+	createHomeTopic: (payload: {
+		title: string;
+		body: string;
+		images?: Array<{ content: string; type: string }>;
+	}) => post<HomeTopic>("/api/v1/home/topics", payload),
+	listHomeComments: (topicId: string, page = 1) =>
+		get<HomeCommentListResponse>(
+			`/api/v1/home/topics/${encodeURIComponent(topicId)}/comments`,
+			{ params: { page: String(page) } },
+		),
+	createHomeComment: (
+		topicId: string,
+		payload: {
+			body: string;
+			images?: Array<{ content: string; type: string }>;
+		},
+	) =>
+		post<HomeComment>(
+			`/api/v1/home/topics/${encodeURIComponent(topicId)}/comments`,
+			payload,
+		),
+	setHomeReaction: (
+		topicId: string,
+		reaction: "like" | "dislike" | null,
+	) =>
+		put<HomeTopic>(
+			`/api/v1/home/topics/${encodeURIComponent(topicId)}/reaction`,
+			{ reaction },
+		),
+	homeTopicImageUrl: (topicId: string, imageId: string) =>
+		`/api/v1/home/topics/${encodeURIComponent(topicId)}/images/${encodeURIComponent(imageId)}`,
+	homeCommentImageUrl: (commentId: string, imageId: string) =>
+		`/api/v1/home/comments/${encodeURIComponent(commentId)}/images/${encodeURIComponent(imageId)}`,
 };
 
 export default api;

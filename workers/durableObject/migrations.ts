@@ -286,4 +286,10 @@ export const mailboxMigrations: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_mailbox_permissions_role ON mailbox_permissions(role);
         `,
 	},
+	{
+		name: "16_add_contact_blocked",
+		sql: `
+            ALTER TABLE contacts ADD COLUMN blocked INTEGER NOT NULL DEFAULT 0;
+        `,
+	},
 ];

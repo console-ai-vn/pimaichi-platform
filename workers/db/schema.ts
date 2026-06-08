@@ -60,6 +60,7 @@ export const contacts = sqliteTable(
 		first_seen_at: text("first_seen_at").notNull(),
 		last_seen_at: text("last_seen_at").notNull(),
 		updated_at: text("updated_at"),
+		blocked: integer("blocked").notNull().default(0),
 	},
 	(table) => [uniqueIndex("idx_contacts_email").on(table.email)],
 );

@@ -2,19 +2,27 @@
 // Licensed under the Apache 2.0 license found in the LICENSE file or at:
 //     https://opensource.org/licenses/Apache-2.0
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { Outlet, useParams } from "react-router";
 import ComposeEmail from "~/components/ComposeEmail";
+import ConversationOverlays from "~/components/ConversationOverlays";
 import Header from "~/components/Header";
 import Sidebar from "~/components/Sidebar";
+import { ConversationActionsContext } from "~/hooks/useConversationActions";
 import { useMailbox } from "~/queries/mailboxes";
 import { useUIStore } from "~/hooks/useUIStore";
+import type { Email } from "~/types";
 
 export default function MailboxRoute() {
 	const { mailboxId } = useParams<{ mailboxId: string }>();
 	// Prefetch mailbox data for child components
 	useMailbox(mailboxId);
 	const prevMailboxIdRef = useRef<string | undefined>(undefined);
+	const [sourceViewEmail, setSourceViewEmail] = useState<Email | null>(null);
+	const conversationActions = useMemo(
+		() => ({ onViewSource: setSourceViewEmail }),
+		[],
+	);
 	const {
 		isSidebarOpen,
 		closeSidebar,
@@ -37,7 +45,8 @@ export default function MailboxRoute() {
 	}, [mailboxId, closeComposeModal, closePanel, closeSidebar]);
 
 	return (
-		<div className="flex h-screen overflow-hidden">
+		<ConversationActionsContext.Provider value={conversationActions}>
+		<div className="flex h-screen overflow-hidden relative">
 			{/* Mobile sidebar overlay backdrop */}
 			{isSidebarOpen && (
 				<div
@@ -68,6 +77,11 @@ export default function MailboxRoute() {
 			</div>
 
 			<ComposeEmail />
+			<ConversationOverlays
+				sourceViewEmail={sourceViewEmail}
+				onCloseSource={() => setSourceViewEmail(null)}
+			/>
 		</div>
+		</ConversationActionsContext.Provider>
 	);
 }

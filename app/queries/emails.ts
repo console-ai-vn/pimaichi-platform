@@ -333,6 +333,40 @@ export function useDeleteEmail() {
 	});
 }
 
+export function useDeleteThread() {
+	const qc = useQueryClient();
+	const invalidate = useInvalidateEmailData();
+	return useMutation({
+		mutationFn: ({
+			mailboxId,
+			threadId,
+		}: { mailboxId: string; threadId: string }) =>
+			api.deleteThread(mailboxId, threadId),
+		onSuccess: (_data, { mailboxId, threadId }) => {
+			invalidate(mailboxId);
+			qc.removeQueries({
+				queryKey: queryKeys.emails.thread(mailboxId, threadId),
+			});
+			qc.removeQueries({
+				queryKey: queryKeys.emails.conversationState(mailboxId, threadId),
+			});
+		},
+	});
+}
+
+export function useMoveThread() {
+	const invalidate = useInvalidateEmailData();
+	return useMutation({
+		mutationFn: ({
+			mailboxId,
+			threadId,
+			folderId,
+		}: { mailboxId: string; threadId: string; folderId: string }) =>
+			api.moveThread(mailboxId, threadId, folderId),
+		onSuccess: (_data, { mailboxId }) => invalidate(mailboxId),
+	});
+}
+
 export function useMoveEmail() {
 	const invalidate = useInvalidateEmailData();
 	return useMutation({

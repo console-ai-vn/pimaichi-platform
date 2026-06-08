@@ -109,6 +109,7 @@ export interface ContactProfile {
 	first_seen_at: string;
 	last_seen_at: string;
 	updated_at?: string | null;
+	blocked?: boolean;
 	threads?: Array<{ thread_id: string }>;
 }
 
@@ -143,4 +144,49 @@ export interface ConversationEvent {
 	actor_email?: string | null;
 	payload?: Record<string, unknown> | null;
 	created_at: string;
+}
+
+export interface FeedImage {
+	id: string;
+	contentType: string;
+	sizeBytes: number;
+	createdAt: string;
+}
+
+export interface HomeTopic {
+	id: string;
+	authorEmail: string;
+	title: string;
+	bodyHtml: string;
+	bodyText: string;
+	likeCount: number;
+	dislikeCount: number;
+	commentCount: number;
+	createdAt: string;
+	updatedAt: string;
+	userReaction: "like" | "dislike" | null;
+	images: FeedImage[];
+}
+
+export interface HomeComment {
+	id: string;
+	topicId: string;
+	authorEmail: string;
+	bodyHtml: string;
+	bodyText: string;
+	createdAt: string;
+	images: FeedImage[];
+}
+
+export interface HomeTopicListResponse {
+	topics: HomeTopic[];
+	totalCount: number;
+	page: number;
+	limit: number;
+}
+
+export interface HomeCommentListResponse {
+	comments: HomeComment[];
+	page: number;
+	limit: number;
 }

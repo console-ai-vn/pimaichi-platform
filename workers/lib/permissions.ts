@@ -60,8 +60,7 @@ export function resolveLegacyRole(
 	if (!normalizedAccessEmail) return null;
 
 	if (allowedAccessEmails.includes(normalizedAccessEmail)) {
-		if (allowedMailboxIds.includes(normalizedMailboxId)) return "admin";
-		return null;
+		return "admin";
 	}
 
 	if (normalizedAccessEmail === normalizedMailboxId) return "owner";

@@ -9,6 +9,8 @@ export const AUDIT_ACTIONS = [
 	"mailbox.avatar_update",
 	"mailbox.cover_update",
 	"conversation.state_update",
+	"conversation.delete",
+	"conversation.move",
 	"note.create",
 	"login.success",
 	"retention.purge",

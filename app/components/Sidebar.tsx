@@ -5,9 +5,9 @@
 import { Badge, Button, Dialog, Input, Tooltip } from "@cloudflare/kumo";
 import {
 	ArchiveIcon,
-	CaretLeftIcon,
 	FileIcon,
 	FolderIcon,
+	NewspaperIcon,
 	PaperPlaneTiltIcon,
 	PencilSimpleIcon,
 	PlusIcon,
@@ -16,7 +16,7 @@ import {
 	UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import { NavLink, useNavigate, useParams } from "react-router";
+import { NavLink, useLocation, useNavigate, useParams } from "react-router";
 import { Folders, SYSTEM_FOLDER_IDS } from "shared/folders";
 import { useCreateFolder, useFolders } from "~/queries/folders";
 import { useBoards } from "~/queries/boards";
@@ -32,8 +32,7 @@ const FOLDER_ICONS: Record<string, React.ReactNode> = {
 };
 
 const SYSTEM_FOLDER_LINKS = [
-	{ id: Folders.INBOX, label: "Feed" },
-	{ id: Folders.SENT, label: "Sent" },
+	{ id: Folders.INBOX, label: "Inbox" },
 	{ id: Folders.DRAFT, label: "Drafts" },
 	{ id: Folders.ARCHIVE, label: "Archive" },
 	{ id: Folders.TRASH, label: "Trash" },
@@ -78,6 +77,7 @@ function FolderLink({
 export default function Sidebar() {
 	const { mailboxId } = useParams<{ mailboxId: string }>();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { data: folders = [] } = useFolders(mailboxId);
 	const createFolderMutation = useCreateFolder();
 	const { startCompose, closeSidebar } = useUIStore();
@@ -123,21 +123,31 @@ export default function Sidebar() {
 		closeSidebar();
 	};
 
+	const handleCompose = () => {
+		if (mailboxId && !location.pathname.includes("/emails/")) {
+			navigate(`/mailbox/${mailboxId}/emails/inbox`);
+		}
+		startCompose({ mode: "new" });
+		closeSidebar();
+	};
+
 	return (
 		<aside className="h-full w-64 bg-kumo-recessed flex flex-col shrink-0 border-r border-kumo-line">
 			{/* Back + identity */}
 			<div className="px-4 pt-4 pb-1">
-				<button
-					type="button"
-					onClick={() => {
-						navigate("/");
-						closeSidebar();
-					}}
-					className="flex items-center gap-1.5 text-kumo-subtle text-sm hover:text-kumo-default transition-colors mb-2.5 cursor-pointer bg-transparent border-0 p-0"
-				>
-					<CaretLeftIcon size={14} />
-					<span>Mailboxes</span>
-				</button>
+				<div className="mb-2.5">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="w-full justify-start text-kumo-subtle"
+						onClick={() => {
+							navigate("/app");
+							closeSidebar();
+						}}
+					>
+						Mailboxes
+					</Button>
+				</div>
 				<div className="px-1">
 					<div className="text-base font-semibold text-kumo-default truncate">
 						{displayName}
@@ -149,27 +159,25 @@ export default function Sidebar() {
 			</div>
 
 			{/* Compose */}
-			<div className="px-3 py-3 space-y-2">
+			<div className="px-3 py-3">
 				<Button
 					variant="primary"
 					icon={<PencilSimpleIcon size={16} />}
-					onClick={() => startCompose({ mode: "new", forumTopic: true })}
+					onClick={handleCompose}
 					className="w-full"
 				>
-					New topic
-				</Button>
-				<Button
-					variant="secondary"
-					icon={<PaperPlaneTiltIcon size={16} />}
-					onClick={() => startCompose({ mode: "new" })}
-					className="w-full"
-				>
-					Compose email
+					Send
 				</Button>
 			</div>
 
 			{/* Navigation */}
 			<nav className="flex-1 overflow-y-auto px-2 space-y-0.5">
+				<FolderLink
+					to={`/mailbox/${mailboxId}/feed`}
+					icon={<NewspaperIcon size={18} weight="regular" />}
+					label="Feed"
+					onClick={handleNavClick}
+				/>
 				{SYSTEM_FOLDER_LINKS.map((folder) => (
 					<FolderLink
 						key={folder.id}

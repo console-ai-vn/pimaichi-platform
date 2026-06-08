@@ -35,6 +35,11 @@ export const queryKeys = {
 	boards: {
 		all: ["boards"] as const,
 	},
+	home: {
+		topics: (page: number) => ["home", "topics", page] as const,
+		topic: (id: string) => ["home", "topic", id] as const,
+		comments: (topicId: string) => ["home", "comments", topicId] as const,
+	},
 	audit: {
 		list: (mailboxId: string, params: Record<string, string>) =>
 			["audit", mailboxId, params] as const,

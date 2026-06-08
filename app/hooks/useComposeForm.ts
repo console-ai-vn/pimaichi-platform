@@ -5,17 +5,12 @@
 import { useKumoToastManager } from "@cloudflare/kumo";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
-	buildQuotedReplyBlock,
-	escapeHtml,
-	formatComposeDate,
 	getSignatureBlock,
 	htmlToPlainText,
 	splitEmailList,
-	stripHtml,
 	toEmailListValue,
 } from "~/lib/utils";
 import { useDeleteEmail, useForwardEmail, useReplyToEmail, useSaveDraft, useSendEmail } from "~/queries/emails";
-import { useBoards } from "~/queries/boards";
 import { useMailbox } from "~/queries/mailboxes";
 import { useUIStore } from "~/hooks/useUIStore";
 import {
@@ -62,17 +57,6 @@ function getPrefixedSubject(subject: string, prefix: "Re" | "Fwd") {
 	return subject.startsWith(expectedPrefix)
 		? subject
 		: `${expectedPrefix}${subject}`;
-}
-
-function buildForwardBody(
-	original: NonNullable<ReturnType<typeof useUIStore.getState>["composeOptions"]["originalEmail"]>,
-	sigBlock: string,
-) {
-	const safeSender = escapeHtml(original.sender);
-	const safeSubject = escapeHtml(original.subject);
-	const safeBody = escapeHtml(stripHtml(original.body || "")).replace(/\n/g, "<br>");
-
-	return `<p><br></p>${sigBlock ? `${sigBlock}<br>` : ""}<div style="border: 1px solid #ddd; padding: 1em; background-color: #f9f9f9; margin: 1em 0;"><strong>Forwarded message:</strong><br><strong>From:</strong> ${safeSender}<br><strong>Date:</strong> ${formatComposeDate(original.date)}<br><strong>Subject:</strong> ${safeSubject}<br><br>${safeBody}</div>`;
 }
 
 function buildReplyAllFields(
@@ -139,7 +123,7 @@ function buildInitialComposeFields(
 			...EMPTY_FIELDS,
 			to: original.sender,
 			subject: getPrefixedSubject(original.subject, "Re"),
-			body: `<p><br></p>${sigBlock ? `${sigBlock}<br>` : ""}${buildQuotedReplyBlock(original.date, original.sender, original.body || "")}`,
+			body: sigBlock ? `<p><br></p>${sigBlock}` : "<p><br></p>",
 		};
 	}
 
@@ -149,7 +133,7 @@ function buildInitialComposeFields(
 			...EMPTY_FIELDS,
 			...recipients,
 			subject: getPrefixedSubject(original.subject, "Re"),
-			body: `<p><br></p>${sigBlock ? `${sigBlock}<br>` : ""}${buildQuotedReplyBlock(original.date, original.sender, original.body || "")}`,
+			body: sigBlock ? `<p><br></p>${sigBlock}` : "<p><br></p>",
 		};
 	}
 
@@ -157,7 +141,7 @@ function buildInitialComposeFields(
 		return {
 			...EMPTY_FIELDS,
 			subject: getPrefixedSubject(original.subject, "Fwd"),
-			body: buildForwardBody(original, sigBlock),
+			body: sigBlock ? `<p><br></p>${sigBlock}` : "<p><br></p>",
 		};
 	}
 
@@ -171,7 +155,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const toastManager = useKumoToastManager();
 	const { composeOptions, closePanel, closeCompose } = useUIStore();
 	const { data: currentMailbox } = useMailbox(mailboxId);
-	const { data: boards = [] } = useBoards();
 	const sendEmailMutation = useSendEmail();
 	const saveDraftMutation = useSaveDraft();
 	const replyMutation = useReplyToEmail();
@@ -190,18 +173,9 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 	const [attachments, setAttachments] = useState<OutgoingImageAttachment[]>([]);
 	const lastInitializedOptionsRef = useRef<typeof composeOptions | null>(null);
 	const isDraftEdit = !!composeOptions.draftEmail;
-	const isForumTopic =
-		composeOptions.forumTopic === true &&
-		composeOptions.mode === "new" &&
-		!isDraftEdit;
-	const postableBoards = useMemo(
-		() => boards.filter((board) => board.canPost),
-		[boards],
-	);
 
 	const formTitle = useMemo(() => {
 		if (isDraftEdit) return "Edit Draft";
-		if (isForumTopic) return "New topic";
 		switch (composeOptions.mode) {
 			case "reply":
 				return "Reply";
@@ -212,7 +186,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 			default:
 				return "New Message";
 		}
-	}, [composeOptions.mode, isDraftEdit, isForumTopic]);
+	}, [composeOptions.mode, isDraftEdit]);
 
 	const sigBlock = useMemo(() => getSignatureBlock(currentMailbox?.settings), [currentMailbox]);
 
@@ -234,14 +208,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		setBody(initialFields.body);
 		setAttachments([]);
 	}, [composeOptions, currentMailbox?.email, sigBlock]);
-
-	useEffect(() => {
-		if (!isForumTopic || postableBoards.length === 0) return;
-		const currentBoard = postableBoards.find((board) => board.email === to.trim().toLowerCase());
-		if (!currentBoard) {
-			setTo(postableBoards[0]?.email || "");
-		}
-	}, [isForumTopic, postableBoards, to]);
 
 	const addImageFiles = async (files: File[]) => {
 		if (files.length === 0) return;
@@ -285,11 +251,7 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		if (!currentMailbox || !mailboxId) { setError("No mailbox selected."); return; }
 		const toRecipients = splitEmailList(to);
 		if (toRecipients.length === 0) {
-			setError(isForumTopic ? "Choose a board to post to." : "Add at least one recipient.");
-			return;
-		}
-		if (isForumTopic && postableBoards.length === 0) {
-			setError("No boards available. Ask an admin to create one.");
+			setError("Add at least one recipient.");
 			return;
 		}
 		const ccRecipients = splitEmailList(cc); const bccRecipients = splitEmailList(bcc);
@@ -307,13 +269,13 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		};
 		const draftId = composeOptions.draftEmail?.id; const mode = composeOptions.mode; const originalId = composeOptions.originalEmail?.id || composeOptions.draftEmail?.in_reply_to;
 		setIsSending(true);
-		toastManager.add({ title: isForumTopic ? "Posting topic..." : "Sending email..." });
+		toastManager.add({ title: "Sending email..." });
 		try {
 			if ((mode === "reply" || mode === "reply-all") && originalId) await replyMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
 			else if (mode === "forward" && originalId) await forwardMutation.mutateAsync({ mailboxId, emailId: originalId, email: emailData });
 			else await sendEmailMutation.mutateAsync({ mailboxId, email: emailData });
 			if (draftId) deleteEmailMutation.mutate({ mailboxId, id: draftId });
-			toastManager.add({ title: isForumTopic ? "Topic posted!" : "Email sent!" });
+			toastManager.add({ title: "Email sent!" });
 			onClose();
 		} catch (err: unknown) { const message = (err instanceof Error ? err.message : null) || "Failed to send email."; setError(message); toastManager.add({ title: message, variant: "error" }); }
 		finally { setIsSending(false); }
@@ -340,8 +302,6 @@ export function useComposeForm(mailboxId?: string, _folder?: string) {
 		isSavingDraft,
 		isSending,
 		formTitle,
-		isForumTopic,
-		postableBoards,
 		handleSaveDraft,
 		handleSend,
 		closeCompose,

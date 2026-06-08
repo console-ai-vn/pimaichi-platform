@@ -84,3 +84,12 @@ test("mailbox migrations include contact memory fields", () => {
 	assert.match(memoryMigration.sql, /ALTER TABLE contacts ADD COLUMN tags TEXT/i);
 	assert.match(memoryMigration.sql, /ALTER TABLE contacts ADD COLUMN memory TEXT/i);
 });
+
+test("mailbox migrations include contact blocked field", () => {
+	const blockedMigration = mailboxMigrations.find(
+		(migration) => migration.name === "16_add_contact_blocked",
+	);
+
+	assert.ok(blockedMigration);
+	assert.match(blockedMigration.sql, /ALTER TABLE contacts ADD COLUMN blocked INTEGER/i);
+});

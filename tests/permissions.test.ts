@@ -38,8 +38,7 @@ function resolveLegacyRole(
 	if (!normalizedAccessEmail) return null;
 
 	if (allowedAccessEmails.includes(normalizedAccessEmail)) {
-		if (allowedMailboxIds.includes(normalizedMailboxId)) return "admin";
-		return null;
+		return "admin";
 	}
 
 	if (normalizedAccessEmail === normalizedMailboxId) return "owner";
@@ -63,9 +62,16 @@ test("resolveLegacyRole treats mailbox owner as owner", () => {
 	);
 });
 
-test("resolveLegacyRole treats ACCESS_EMAIL_ADDRESSES users as admin", () => {
+test("resolveLegacyRole treats ACCESS_EMAIL_ADDRESSES users as admin on any mailbox", () => {
 	assert.equal(
 		resolveLegacyRole("ceo@example.com", "admin@example.com", {
+			allowedAccessEmails: ["ceo@example.com"],
+			allowedMailboxIds: ["admin@example.com"],
+		}),
+		"admin",
+	);
+	assert.equal(
+		resolveLegacyRole("ceo@example.com", "board@example.com", {
 			allowedAccessEmails: ["ceo@example.com"],
 			allowedMailboxIds: ["admin@example.com"],
 		}),

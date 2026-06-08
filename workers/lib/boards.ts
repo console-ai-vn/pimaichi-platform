@@ -7,15 +7,13 @@ import {
 	listMailboxes,
 	getMailboxStub,
 } from "./email-helpers";
-import {
-	resolveMailboxRole,
-	roleHasPermission,
-} from "./permissions";
+import { roleHasPermission } from "./permissions";
 import {
 	getBoardMeta,
 	isNewTopicSend,
 	loadMailboxSettings,
 } from "./board-settings";
+import { resolveBoardAccessRole } from "./board-access";
 import type { Env } from "../types";
 
 export {
@@ -23,6 +21,27 @@ export {
 	isNewTopicSend,
 	loadMailboxSettings,
 } from "./board-settings";
+
+export async function resolveBoardNewTopicPosting(
+	env: Env,
+	recipients: {
+		to: string | string[];
+		cc?: string | string[];
+		bcc?: string | string[];
+	},
+	replyMeta: {
+		in_reply_to?: string | null;
+		thread_id?: string | null;
+	},
+): Promise<boolean> {
+	if (!isNewTopicSend(replyMeta)) return false;
+	const routing = getRecipientRouting(env, recipients);
+	for (const address of routing.internalRecipients) {
+		const settings = await loadMailboxSettings(env.BUCKET, address);
+		if (getBoardMeta(settings).isPublicBoard) return true;
+	}
+	return false;
+}
 
 export class BoardAccessError extends Error {
 	constructor(message: string) {
@@ -54,11 +73,13 @@ export async function listAccessibleBoards(
 		if (!meta.isPublicBoard) continue;
 
 		const stub = getMailboxStub(env, mailbox.id);
-		const role = await resolveMailboxRole(
+		const role = await resolveBoardAccessRole(
+			env,
 			accessEmail,
 			mailbox.id,
 			accessOptions,
 			(email) => stub.getExplicitMailboxRole(email),
+			settings,
 		);
 		if (!role || !roleHasPermission(role, "read")) continue;
 
@@ -121,11 +142,13 @@ export async function assertOutboundRecipientsAllowed(
 		if (!isPublicBoard) continue;
 
 		const stub = getMailboxStub(env, address);
-		const role = await resolveMailboxRole(
+		const role = await resolveBoardAccessRole(
+			env,
 			accessEmail,
 			address,
 			accessOptions,
 			(email) => stub.getExplicitMailboxRole(email),
+			settings,
 		);
 		if (!role || !roleHasPermission(role, "send")) {
 			throw new BoardAccessError(

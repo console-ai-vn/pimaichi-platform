@@ -11,6 +11,10 @@
 import DOMPurify from "dompurify";
 import { formatQuotedDate } from "shared/dates";
 import { rewriteCidImages } from "shared/cid-images";
+import {
+	stripQuotedMailHtml,
+	stripQuotedMailPlainText,
+} from "shared/email-quote";
 import type { Attachment } from "~/types";
 
 export {
@@ -96,6 +100,14 @@ function decodeHtmlEntities(text: string): string {
 		.replace(/&nbsp;/g, " ");
 }
 
+/** Chat/inbox display text — newest reply only, no quoted mail history. */
+export function extractChatMessageText(html?: string | null): string {
+	if (!html) return "";
+	return stripQuotedMailPlainText(
+		stripHtml(stripQuotedMailHtml(html)),
+	);
+}
+
 export function getSnippetText(
 	snippet?: string | null,
 	maxLength = 100,
@@ -103,7 +115,7 @@ export function getSnippetText(
 	if (!snippet) return "";
 
 	const clean = decodeHtmlEntities(
-		snippet
+		extractChatMessageText(snippet) || snippet
 			.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
 			.replace(/<style[^>]*>[\s\S]*/gi, "")
 			.replace(/<[^>]*>/g, " ")

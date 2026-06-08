@@ -12,6 +12,7 @@ import { getAccessEmail, normalizeEmail } from "./lib/access";
 import type { AccessVariables, Env } from "./types";
 
 export { MailboxDO } from "./durableObject";
+export { OrgFeedDO } from "./durableObject/orgFeed";
 export { EmailAgent } from "./agent";
 export { EmailMCP } from "./mcp";
 

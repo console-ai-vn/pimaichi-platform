@@ -20,13 +20,13 @@ import { Folders } from "shared/folders";
 import MailboxSplitView from "~/components/MailboxSplitView";
 import MobileSocialInboxCard from "~/components/MobileSocialInboxCard";
 import {
-	useDeleteEmail,
 	useEmails,
 	useMarkThreadRead,
 	useUpdateEmail,
 } from "~/queries/emails";
 import { useFolders } from "~/queries/folders";
 import { queryKeys } from "~/queries/keys";
+import { useMailbox } from "~/queries/mailboxes";
 import { useUIStore } from "~/hooks/useUIStore";
 import type { Email } from "~/types";
 
@@ -43,9 +43,8 @@ const FOLDER_EMPTY_STATES: Record<
 > = {
 	[Folders.INBOX]: {
 		icon: <TrayIcon size={48} weight="thin" className="text-kumo-subtle" />,
-		title: "Feed is empty",
-		description:
-			"Start a topic on an admin board or wait for new conversations to arrive.",
+		title: "Inbox is empty",
+		description: "Compose an email or wait for new messages to arrive.",
 		showCompose: true,
 	},
 	[Folders.SENT]: {
@@ -129,7 +128,7 @@ function FolderEmptyState({
 					icon={<PencilSimpleIcon size={16} />}
 					onClick={onCompose}
 				>
-					New topic
+					Send
 				</Button>
 			)}
 		</div>
@@ -148,13 +147,12 @@ export default function EmailListRoute() {
 		closePanel,
 		startCompose,
 	} = useUIStore();
+	const { data: currentMailbox } = useMailbox(mailboxId);
 	const [page, setPage] = useState(1);
 
 	const queryClient = useQueryClient();
 	const updateEmail = useUpdateEmail();
 	const markThreadRead = useMarkThreadRead();
-	const deleteEmail = useDeleteEmail();
-
 	const params = useMemo(
 		() => ({
 			folder: folder || "",
@@ -194,28 +192,6 @@ export default function EmailListRoute() {
 			setPage(1);
 		}
 	}, [mailboxId, folder, closePanel]);
-
-	const toggleStar = (e: React.MouseEvent, email: Email) => {
-		e.preventDefault();
-		e.stopPropagation();
-		if (mailboxId)
-			updateEmail.mutate({
-				mailboxId,
-				id: email.id,
-				data: { starred: !email.starred },
-			});
-	};
-
-	const handleDelete = (e: React.MouseEvent, emailId: string) => {
-		e.preventDefault();
-		e.stopPropagation();
-		if (mailboxId) {
-			const confirmed = window.confirm("Are you sure you want to delete this email?");
-			if (!confirmed) return;
-			deleteEmail.mutate({ mailboxId, id: emailId });
-			if (selectedEmailId === emailId) closePanel();
-		}
-	};
 
 	const handleRefresh = () => {
 		if (mailboxId) {
@@ -261,18 +237,18 @@ export default function EmailListRoute() {
 				<div className="flex items-center justify-between px-4 py-3.5 border-b border-kumo-line shrink-0 md:px-5">
 					<div>
 						<h1 className="text-lg font-semibold text-kumo-default">
-							{folder === Folders.INBOX ? "Relationship Feed" : folderName}
+							{folder === Folders.INBOX ? "Messages" : folderName}
 						</h1>
 						{folder === Folders.INBOX && (
 							<p className="text-xs text-kumo-subtle mt-0.5">
-								People, priority signals, and AI next actions.
+								Chat with your team — pick a conversation to continue.
 							</p>
 						)}
 					</div>
 					<div className="flex items-center gap-1">
 						{totalCount > 0 && (
 							<span className="text-sm text-kumo-subtle mr-2 hidden sm:inline">
-								{totalCount} conversation{totalCount !== 1 ? "s" : ""}
+								{totalCount} chat{totalCount !== 1 ? "s" : ""}
 							</span>
 						)}
 						<Tooltip
@@ -303,27 +279,17 @@ export default function EmailListRoute() {
 				{isRefreshing && emails.length === 0 ? (
 					<EmailListSkeleton />
 				) : emails.length > 0 ? (
-						<div className="space-y-3 p-3 md:p-4">
+						<div className="divide-y divide-kumo-line">
 							{emails.map((email) => {
 								const isSelected = selectedEmailId === email.id;
 								return (
 									<MobileSocialInboxCard
 										key={email.id}
 										email={email}
+										mailboxEmail={currentMailbox?.email}
 										isSelected={isSelected}
 										isPanelOpen={isPanelOpen}
 										onOpen={handleRowClick}
-										onToggleStar={toggleStar}
-										onToggleRead={(e, target) => {
-											e.stopPropagation();
-											if (mailboxId)
-												updateEmail.mutate({
-													mailboxId,
-													id: target.id,
-													data: { read: !target.read },
-												});
-										}}
-										onDelete={handleDelete}
 									/>
 								);
 							})}
@@ -331,7 +297,7 @@ export default function EmailListRoute() {
 					) : (
 						<FolderEmptyState
 							folder={folder}
-							onCompose={() => startCompose({ mode: "new", forumTopic: true })}
+							onCompose={() => startCompose({ mode: "new" })}
 						/>
 					)}
 				</div>

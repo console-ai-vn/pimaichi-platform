@@ -12,8 +12,6 @@ export interface ComposeOptions {
 	originalEmail?: Email | null;
 	/** When editing a draft, this holds the draft email to pre-fill the composer */
 	draftEmail?: Email | null;
-	/** Curated forum topic flow — board picker instead of free-form To */
-	forumTopic?: boolean;
 }
 
 interface UIState {
@@ -38,6 +36,16 @@ interface UIState {
 	// Agent panel
 	isAgentPanelOpen: boolean;
 	toggleAgentPanel: () => void;
+	openAgentPanel: () => void;
+	closeAgentPanel: () => void;
+
+	// Conversation overlays (triggered from header)
+	isSocialContextOpen: boolean;
+	toggleSocialContext: () => void;
+	closeSocialContext: () => void;
+	isNoteComposerOpen: boolean;
+	toggleNoteComposer: () => void;
+	closeNoteComposer: () => void;
 
 	// Legacy dialog support (kept for non-split views)
 	isComposeModalOpen: boolean;
@@ -52,7 +60,9 @@ export const useUIStore = create<UIState>((set, get) => ({
 	composeOptions: { mode: "new", originalEmail: null },
 	isComposeModalOpen: false,
 	isSidebarOpen: false,
-	isAgentPanelOpen: true,
+	isAgentPanelOpen: false,
+	isSocialContextOpen: false,
+	isNoteComposerOpen: false,
 
 	selectEmail: (id) => set({ selectedEmailId: id, isComposing: false }),
 
@@ -70,7 +80,16 @@ export const useUIStore = create<UIState>((set, get) => ({
 			};
 		}),
 
-	closePanel: () => set({ selectedEmailId: null, isComposing: false, _previousEmailId: null, composeOptions: { mode: "new" as const, originalEmail: null } }),
+	closePanel: () =>
+		set({
+			selectedEmailId: null,
+			isComposing: false,
+			_previousEmailId: null,
+			composeOptions: { mode: "new" as const, originalEmail: null },
+			isAgentPanelOpen: false,
+			isSocialContextOpen: false,
+			isNoteComposerOpen: false,
+		}),
 
 	closeCompose: () =>
 		set((state) => ({
@@ -85,6 +104,14 @@ export const useUIStore = create<UIState>((set, get) => ({
 	toggleSidebar: () => set({ isSidebarOpen: !get().isSidebarOpen }),
 
 	toggleAgentPanel: () => set({ isAgentPanelOpen: !get().isAgentPanelOpen }),
+	openAgentPanel: () => set({ isAgentPanelOpen: true }),
+	closeAgentPanel: () => set({ isAgentPanelOpen: false }),
+	toggleSocialContext: () =>
+		set({ isSocialContextOpen: !get().isSocialContextOpen }),
+	closeSocialContext: () => set({ isSocialContextOpen: false }),
+	toggleNoteComposer: () =>
+		set({ isNoteComposerOpen: !get().isNoteComposerOpen }),
+	closeNoteComposer: () => set({ isNoteComposerOpen: false }),
 
 	openComposeModal: (options) =>
 		set({

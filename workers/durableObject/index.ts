@@ -42,6 +42,12 @@ const NORMALIZED_SUBJECT_SQL = `LOWER(TRIM(
 		're: ', ''), 'fwd: ', ''), 'fw: ', '')
 ))`;
 
+/** Inbox merges active outbound threads (latest message still in sent). */
+const INBOX_ACTIVE_FOLDERS_SQL = `(
+	(SELECT id FROM folders WHERE name = '${Folders.INBOX}' OR id = '${Folders.INBOX}' LIMIT 1),
+	(SELECT id FROM folders WHERE name = '${Folders.SENT}' OR id = '${Folders.SENT}' LIMIT 1)
+)`;
+
 const ALLOWED_SORT_COLUMNS = [
 	"id",
 	"subject",
@@ -334,7 +340,14 @@ export class MailboxDO extends DurableObject<Env> {
 			}));
 		}
 
-		// Non-draft folders: full threading logic
+		const isInboxView = folder === Folders.INBOX;
+		const folderEmailsWhere = isInboxView
+			? `folder_id IN ${INBOX_ACTIVE_FOLDERS_SQL}`
+			: `folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)`;
+		const activeLatestFilter = isInboxView
+			? `AND lmc.folder_id IN ${INBOX_ACTIVE_FOLDERS_SQL}`
+			: "";
+
 		const result = this.ctx.storage.sql.exec(
 			`WITH
 			folder_emails AS (
@@ -342,7 +355,7 @@ export class MailboxDO extends DurableObject<Env> {
 					COALESCE(thread_id, id) as raw_thread_id,
 					${NORMALIZED_SUBJECT_SQL} as normalized_subject
 				FROM emails
-				WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
+				WHERE ${folderEmailsWhere}
 			),
 			thread_to_conversation AS (
 				SELECT
@@ -374,7 +387,7 @@ export class MailboxDO extends DurableObject<Env> {
 				FROM all_emails_with_conversation
 				WHERE conversation_id IN (
 					SELECT DISTINCT conversation_id FROM all_emails_with_conversation
-					WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
+					WHERE ${folderEmailsWhere}
 				)
 				GROUP BY conversation_id
 			),
@@ -417,20 +430,39 @@ export class MailboxDO extends DurableObject<Env> {
 			LEFT JOIN latest_message_per_conversation lmc
 				ON lmc.conversation_id = lif.conversation_id AND lmc.rn = 1
 			LEFT JOIN conversation_state st ON st.thread_id = lif.conversation_id
-			WHERE lif.rn = 1
+			WHERE lif.rn = 1 ${activeLatestFilter}
 			ORDER BY lif.date DESC
-			LIMIT ?2 OFFSET ?3`,
-			folder, limit, offset
+			LIMIT ${isInboxView ? "?1" : "?2"} OFFSET ${isInboxView ? "?2" : "?3"}`,
+			...(isInboxView ? [limit, offset] : [folder, limit, offset]),
 		);
 
-		const rows = [...result];
-		return rows.map((row: any) => ({
+		return [...result].map((row) => this.mapThreadedListRow(row));
+	}
+
+	private listRowContactField(row: {
+		sender: string;
+		recipient: string;
+		folder_id: string;
+	}) {
+		const raw =
+			row.folder_id === Folders.SENT ? row.recipient : row.sender;
+		return raw?.split(",")[0]?.trim() || raw;
+	}
+
+	private mapThreadedListRow(row: Record<string, unknown>) {
+		return {
 			...row,
-			...this.getContactSummaryForEmail(row.sender),
+			...this.getContactSummaryForEmail(
+				this.listRowContactField(row as {
+					sender: string;
+					recipient: string;
+					folder_id: string;
+				}),
+			),
 			read: !!row.read,
 			starred: !!row.starred,
-			thread_count: row.thread_count || 1,
-			thread_unread_count: row.thread_unread_count || 0,
+			thread_count: (row.thread_count as number) || 1,
+			thread_unread_count: (row.thread_unread_count as number) || 0,
 			participants: row.participants || row.sender,
 			needs_reply: !!row.needs_reply,
 			has_draft: !!row.has_draft,
@@ -439,7 +471,7 @@ export class MailboxDO extends DurableObject<Env> {
 			priority: row.priority || "normal",
 			state_needs_reply: !!row.state_needs_reply,
 			last_seen_at: row.last_seen_at ?? null,
-		}));
+		};
 	}
 
 	private getContactSummaryForEmail(value?: string | null) {
@@ -494,6 +526,59 @@ export class MailboxDO extends DurableObject<Env> {
 			return row?.total ?? 0;
 		}
 
+		const isInboxView = folder === Folders.INBOX;
+		const folderEmailsWhere = isInboxView
+			? `folder_id IN ${INBOX_ACTIVE_FOLDERS_SQL}`
+			: `folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)`;
+
+		if (isInboxView) {
+			const row = [
+				...this.ctx.storage.sql.exec(
+					`WITH
+					folder_emails AS (
+						SELECT
+							COALESCE(thread_id, id) as raw_thread_id,
+							thread_id,
+							${NORMALIZED_SUBJECT_SQL} as normalized_subject
+						FROM emails
+						WHERE ${folderEmailsWhere}
+					),
+					thread_to_conversation AS (
+						SELECT
+							raw_thread_id,
+							CASE
+								WHEN thread_id IS NOT NULL THEN raw_thread_id
+								WHEN normalized_subject != '' THEN MIN(raw_thread_id) OVER (PARTITION BY normalized_subject)
+								ELSE raw_thread_id
+							END as conversation_id
+						FROM folder_emails
+						GROUP BY raw_thread_id, normalized_subject, thread_id
+					),
+					all_emails_with_conversation AS (
+						SELECT
+							e.*,
+							COALESCE(tc.conversation_id, COALESCE(e.thread_id, e.id)) as conversation_id
+						FROM emails e
+						LEFT JOIN thread_to_conversation tc
+							ON COALESCE(e.thread_id, e.id) = tc.raw_thread_id
+					),
+					latest_message_per_conversation AS (
+						SELECT
+							conversation_id,
+							folder_id,
+							ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY date DESC) as rn
+						FROM all_emails_with_conversation
+						WHERE conversation_id IN (SELECT DISTINCT conversation_id FROM thread_to_conversation)
+					)
+					SELECT COUNT(*) as total
+					FROM latest_message_per_conversation
+					WHERE rn = 1
+						AND folder_id IN ${INBOX_ACTIVE_FOLDERS_SQL}`,
+				),
+			][0] as { total: number } | undefined;
+			return row?.total ?? 0;
+		}
+
 		const row = [
 			...this.ctx.storage.sql.exec(
 				`WITH
@@ -503,7 +588,7 @@ export class MailboxDO extends DurableObject<Env> {
 						thread_id,
 					${NORMALIZED_SUBJECT_SQL} as normalized_subject
 					FROM emails
-					WHERE folder_id = (SELECT id FROM folders WHERE name = ?1 OR id = ?1 LIMIT 1)
+					WHERE ${folderEmailsWhere}
 				),
 				thread_to_conversation AS (
 					SELECT
@@ -654,6 +739,43 @@ export class MailboxDO extends DurableObject<Env> {
 		return emailAttachments;
 	}
 
+	async deleteThread(threadId: string) {
+		const emailRows = [
+			...this.ctx.storage.sql.exec(
+				`SELECT id FROM emails WHERE thread_id = ?1 OR id = ?1`,
+				threadId,
+			),
+		] as Array<{ id: string }>;
+
+		if (emailRows.length === 0) return null;
+
+		const deleted: Array<{
+			emailId: string;
+			attachments: Array<{ id: string; filename: string }>;
+		}> = [];
+
+		for (const row of emailRows) {
+			const attachments = await this.deleteEmail(row.id);
+			if (attachments === null) continue;
+			deleted.push({ emailId: row.id, attachments });
+		}
+
+		this.ctx.storage.sql.exec(
+			`DELETE FROM conversation_state WHERE thread_id = ?1`,
+			threadId,
+		);
+		this.ctx.storage.sql.exec(
+			`DELETE FROM internal_notes WHERE thread_id = ?1`,
+			threadId,
+		);
+		this.ctx.storage.sql.exec(
+			`DELETE FROM conversation_events WHERE thread_id = ?1`,
+			threadId,
+		);
+
+		return { threadId, deleted };
+	}
+
 	async getAttachment(id: string) {
 		return (
 			this.db
@@ -741,6 +863,35 @@ export class MailboxDO extends DurableObject<Env> {
 			.run();
 
 		return true;
+	}
+
+	async moveThread(threadId: string, folderId: string) {
+		const folder = this.db
+			.select({ id: schema.folders.id })
+			.from(schema.folders)
+			.where(eq(schema.folders.id, folderId))
+			.get();
+
+		if (!folder) return null;
+
+		const emailRows = [
+			...this.ctx.storage.sql.exec(
+				`SELECT id FROM emails WHERE thread_id = ?1 OR id = ?1`,
+				threadId,
+			),
+		] as Array<{ id: string }>;
+
+		if (emailRows.length === 0) return null;
+
+		for (const row of emailRows) {
+			this.db
+				.update(schema.emails)
+				.set({ folder_id: folderId })
+				.where(eq(schema.emails.id, row.id))
+				.run();
+		}
+
+		return { threadId, movedCount: emailRows.length, folderId };
 	}
 
 	// ── Search (raw SQL — dynamic condition builder) ───────────────
@@ -912,6 +1063,18 @@ export class MailboxDO extends DurableObject<Env> {
 
 	// ── Email creation (Drizzle) ───────────────────────────────────
 
+	isSenderBlocked(senderEmail: string) {
+		const sender = senderEmail.trim().toLowerCase();
+		if (!sender) return false;
+		const row = [
+			...this.ctx.storage.sql.exec(
+				`SELECT blocked FROM contacts WHERE email = ?1`,
+				sender,
+			),
+		][0] as { blocked: number } | undefined;
+		return (row?.blocked ?? 0) === 1;
+	}
+
 	async createEmail(
 		folder: string,
 		email: EmailData,
@@ -934,6 +1097,10 @@ export class MailboxDO extends DurableObject<Env> {
 
 		const folderId = folderRow.id;
 		const isSent = folderId === Folders.SENT;
+
+		if (folderId === Folders.INBOX && email.sender && this.isSenderBlocked(email.sender)) {
+			return;
+		}
 
 		// Sent emails are always read — the sender obviously knows what they wrote.
 		// This prevents sent replies from inflating thread_unread_count.
@@ -987,7 +1154,7 @@ export class MailboxDO extends DurableObject<Env> {
 			...this.ctx.storage.sql.exec(
 				`SELECT id, email, display_name, bio, contact_description, relationship,
 				        relationship_stage, tags, memory, location, website,
-				        first_seen_at, last_seen_at, updated_at
+				        first_seen_at, last_seen_at, updated_at, blocked
 				 FROM contacts
 				 WHERE email = ?1`,
 				email,
@@ -1007,7 +1174,11 @@ export class MailboxDO extends DurableObject<Env> {
 			),
 		];
 
-		return { ...contact, threads };
+		return {
+			...contact,
+			blocked: (contact.blocked ?? 0) === 1,
+			threads,
+		};
 	}
 
 	updateContactProfile(
@@ -1022,13 +1193,15 @@ export class MailboxDO extends DurableObject<Env> {
 			memory?: string | null;
 			location?: string | null;
 			website?: string | null;
+			blocked?: boolean;
 		},
 	) {
 		const email = emailAddress.trim().toLowerCase();
 		const now = new Date().toISOString();
 		const contactId = socialContactIdForEmail(email);
 		const current = this.getContactProfile(email) as any;
-		const valueFor = (key: keyof typeof patch) =>
+		type StringProfileField = Exclude<keyof typeof patch, "blocked">;
+		const valueFor = (key: StringProfileField) =>
 			Object.prototype.hasOwnProperty.call(patch, key)
 				? patch[key]?.trim() || null
 				: current?.[key] ?? null;
@@ -1043,12 +1216,18 @@ export class MailboxDO extends DurableObject<Env> {
 			location: valueFor("location"),
 			website: valueFor("website"),
 		};
+		const blocked = Object.prototype.hasOwnProperty.call(patch, "blocked")
+			? patch.blocked
+				? 1
+				: 0
+			: (current?.blocked ? 1 : 0);
 
 		this.ctx.storage.sql.exec(
 			`INSERT INTO contacts (
 				id, email, display_name, bio, contact_description, relationship,
-				relationship_stage, tags, memory, location, website, first_seen_at, last_seen_at, updated_at
-			) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12, ?12)
+				relationship_stage, tags, memory, location, website, blocked,
+				first_seen_at, last_seen_at, updated_at
+			) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?13, ?13)
 			ON CONFLICT(email) DO UPDATE SET
 				display_name = excluded.display_name,
 				bio = excluded.bio,
@@ -1059,6 +1238,7 @@ export class MailboxDO extends DurableObject<Env> {
 				memory = excluded.memory,
 				location = excluded.location,
 				website = excluded.website,
+				blocked = excluded.blocked,
 				updated_at = excluded.updated_at`,
 			contactId,
 			email,
@@ -1071,6 +1251,7 @@ export class MailboxDO extends DurableObject<Env> {
 			clean.memory,
 			clean.location,
 			clean.website,
+			blocked,
 			now,
 		);
 

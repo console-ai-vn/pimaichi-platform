@@ -38,10 +38,9 @@ export function assertMailboxAccess(
 	}
 
 	const isDirectMailboxOwner = normalizedAccessEmail === normalizedMailboxId;
-	const isAllowedMember = allowedAccessEmails.includes(normalizedAccessEmail);
-	const isConfiguredMailbox = allowedMailboxIds.includes(normalizedMailboxId);
+	const isPlatformAdmin = allowedAccessEmails.includes(normalizedAccessEmail);
 
-	if (!isDirectMailboxOwner && !(isAllowedMember && isConfiguredMailbox)) {
+	if (!isDirectMailboxOwner && !isPlatformAdmin) {
 		throw new AccessAuthorizationError("You do not have access to this mailbox");
 	}
 }
@@ -63,9 +62,7 @@ export function filterMailboxIdsForAccess(
 	const allowedAccessEmails = normalizeEmailList(options.allowedAccessEmails ?? []);
 
 	if (allowedAccessEmails.includes(normalizedAccessEmail)) {
-		return mailboxIds.filter((mailboxId) =>
-			allowedMailboxIds.includes(normalizeEmail(mailboxId)),
-		);
+		return mailboxIds;
 	}
 
 	return mailboxIds.filter(
