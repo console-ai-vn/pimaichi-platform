@@ -8,7 +8,6 @@ import {
 	MapPinIcon,
 	PhoneIcon,
 } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import MailboxAvatar from "~/components/MailboxAvatar";
@@ -20,9 +19,7 @@ import {
 	useUploadMailboxAvatar,
 	useUploadMailboxCover,
 } from "~/queries/mailboxes";
-import { queryKeys } from "~/queries/keys";
-import api from "~/services/api";
-import type { MailboxSettings, SignatureSettings } from "~/types";
+import type { MailboxSettings } from "~/types";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
@@ -81,22 +78,9 @@ export default function SettingsRoute() {
 	const [bio, setBio] = useState("");
 	const [location, setLocation] = useState("");
 	const [website, setWebsite] = useState("");
-	const [signatureEnabled, setSignatureEnabled] = useState(false);
-	const [signatureText, setSignatureText] = useState("");
-	const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
-	const [autoReplySubject, setAutoReplySubject] = useState("");
-	const [autoReplyMessage, setAutoReplyMessage] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [avatarVersion, setAvatarVersion] = useState<string | null>(null);
 	const [coverVersion, setCoverVersion] = useState<string | null>(null);
-	const [isPublicBoard, setIsPublicBoard] = useState(false);
-	const [boardName, setBoardName] = useState("");
-	const [boardDescription, setBoardDescription] = useState("");
-	const { data: config } = useQuery({
-		queryKey: queryKeys.config,
-		queryFn: () => api.getConfig(),
-	});
-	const isAdmin = config?.isAdmin ?? false;
 
 	useEffect(() => {
 		if (!mailbox) return;
@@ -110,26 +94,14 @@ export default function SettingsRoute() {
 		setBio(settings?.bio?.trim() || "");
 		setLocation(settings?.location?.trim() || defaults.location);
 		setWebsite(settings?.website?.trim() || defaults.website);
-		setSignatureEnabled(settings?.signature?.enabled ?? false);
-		setSignatureText(settings?.signature?.text?.trim() || "");
-		setAutoReplyEnabled(settings?.autoReply?.enabled ?? false);
-		setAutoReplySubject(settings?.autoReply?.subject?.trim() || "");
-		setAutoReplyMessage(settings?.autoReply?.message?.trim() || "");
 		setAvatarVersion(settings?.avatarUpdatedAt ?? null);
 		setCoverVersion(settings?.coverUpdatedAt ?? null);
-		setIsPublicBoard(settings?.isPublicBoard === true);
-		setBoardName(settings?.boardName?.trim() || defaults.fromName);
-		setBoardDescription(settings?.boardDescription?.trim() || "");
 	}, [mailbox]);
 
 	const handleSave = async () => {
 		if (!mailbox || !mailboxId) return;
 		setIsSaving(true);
 
-		const signature: SignatureSettings = {
-			enabled: signatureEnabled,
-			text: signatureText.trim(),
-		};
 		const settings: MailboxSettings = {
 			...mailbox.settings,
 			fromName: displayName.trim() || mailbox.name,
@@ -139,19 +111,6 @@ export default function SettingsRoute() {
 			bio: bio.trim() || undefined,
 			location: location.trim() || undefined,
 			website: website.trim() || undefined,
-			signature,
-			autoReply: {
-				enabled: autoReplyEnabled,
-				subject: autoReplySubject.trim(),
-				message: autoReplyMessage.trim(),
-			},
-			...(isAdmin
-				? {
-						isPublicBoard,
-						boardName: boardName.trim() || displayName.trim() || mailbox.name,
-						boardDescription: boardDescription.trim() || undefined,
-					}
-				: {}),
 		};
 
 		try {
@@ -325,155 +284,60 @@ export default function SettingsRoute() {
 						</div>
 					</div>
 
-					<div className="mt-6 space-y-6">
-						<section className="space-y-4 rounded-xl border border-kumo-line bg-kumo-base p-5">
-							<div>
-								<h2 className="text-sm font-semibold text-kumo-default">
-									Profile
-								</h2>
-								<p className="text-xs text-kumo-subtle">
-									Visible to teammates in feed, inbox, and profile sheets.
-								</p>
-							</div>
-							<Input
-								label="Display name"
-								value={displayName}
-								onChange={(e) => setDisplayName(e.target.value)}
-								placeholder="How you appear when sending mail"
+					<section className="mt-6 space-y-4 rounded-xl border border-kumo-line bg-kumo-base p-5">
+						<div>
+							<h2 className="text-sm font-semibold text-kumo-default">Profile</h2>
+							<p className="text-xs text-kumo-subtle">
+								Visible to teammates in feed, inbox, and profile sheets.
+							</p>
+						</div>
+						<Input
+							label="Display name"
+							value={displayName}
+							onChange={(e) => setDisplayName(e.target.value)}
+							placeholder="How you appear when sending mail"
+						/>
+						<Input
+							label="Role / job title"
+							value={jobTitle}
+							onChange={(e) => setJobTitle(e.target.value)}
+							placeholder="Marketing Lead"
+						/>
+						<Input
+							label="Team / department"
+							value={department}
+							onChange={(e) => setDepartment(e.target.value)}
+							placeholder="Marketing"
+						/>
+						<label className="block space-y-1.5">
+							<span className="text-sm font-medium text-kumo-default">Bio</span>
+							<textarea
+								className="min-h-24 w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
+								value={bio}
+								onChange={(e) => setBio(e.target.value)}
+								placeholder="Short intro — role, team, what you do"
 							/>
-							<Input
-								label="Role / job title"
-								value={jobTitle}
-								onChange={(e) => setJobTitle(e.target.value)}
-								placeholder="Marketing Lead"
-							/>
-							<Input
-								label="Team / department"
-								value={department}
-								onChange={(e) => setDepartment(e.target.value)}
-								placeholder="Marketing"
-							/>
-							<label className="block space-y-1.5">
-								<span className="text-sm font-medium text-kumo-default">Bio</span>
-								<textarea
-									className="min-h-24 w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
-									value={bio}
-									onChange={(e) => setBio(e.target.value)}
-									placeholder="Short intro — role, team, what you do"
-								/>
-							</label>
-							<Input
-								label="Location"
-								value={location}
-								onChange={(e) => setLocation(e.target.value)}
-								placeholder="Ho Chi Minh City"
-							/>
-							<Input
-								label="Phone"
-								value={phone}
-								onChange={(e) => setPhone(e.target.value)}
-								placeholder="+84 ..."
-							/>
-							<Input
-								label="Website"
-								value={website}
-								onChange={(e) => setWebsite(e.target.value)}
-								placeholder="vsbg.vn"
-							/>
-							<Input label="Email" type="email" value={mailbox.email} disabled />
-						</section>
-
-						<section className="space-y-4 rounded-xl border border-kumo-line bg-kumo-base p-5">
-							<div>
-								<h2 className="text-sm font-semibold text-kumo-default">Mail</h2>
-								<p className="text-xs text-kumo-subtle">
-									Signature and auto-reply apply when you send from this mailbox.
-								</p>
-							</div>
-							<label className="flex items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									checked={signatureEnabled}
-									onChange={(e) => setSignatureEnabled(e.target.checked)}
-								/>
-								Enable email signature
-							</label>
-							<label className="block space-y-1.5">
-								<span className="text-sm font-medium text-kumo-default">
-									Signature
-								</span>
-								<textarea
-									className="min-h-20 w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
-									value={signatureText}
-									onChange={(e) => setSignatureText(e.target.value)}
-									placeholder="Best regards,&#10;Marketing Team"
-								/>
-							</label>
-							<label className="flex items-center gap-2 text-sm text-kumo-default">
-								<input
-									type="checkbox"
-									checked={autoReplyEnabled}
-									onChange={(e) => setAutoReplyEnabled(e.target.checked)}
-								/>
-								Enable auto-reply
-							</label>
-							<Input
-								label="Auto-reply subject"
-								value={autoReplySubject}
-								onChange={(e) => setAutoReplySubject(e.target.value)}
-								placeholder="Out of office"
-							/>
-							<label className="block space-y-1.5">
-								<span className="text-sm font-medium text-kumo-default">
-									Auto-reply message
-								</span>
-								<textarea
-									className="min-h-20 w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
-									value={autoReplyMessage}
-									onChange={(e) => setAutoReplyMessage(e.target.value)}
-									placeholder="Thanks for your email. We will get back to you soon."
-								/>
-							</label>
-						</section>
-
-						{isAdmin && (
-							<section className="space-y-4 rounded-xl border border-kumo-line bg-kumo-base p-5">
-								<div>
-									<h2 className="text-sm font-semibold text-kumo-default">
-										Board
-									</h2>
-									<p className="text-xs text-kumo-subtle">
-										Public board settings for curated forum mailboxes.
-									</p>
-								</div>
-								<label className="flex items-center gap-2 text-sm text-kumo-default">
-									<input
-										type="checkbox"
-										checked={isPublicBoard}
-										onChange={(e) => setIsPublicBoard(e.target.checked)}
-									/>
-									Public board (curated forum)
-								</label>
-								<Input
-									label="Board name"
-									value={boardName}
-									onChange={(e) => setBoardName(e.target.value)}
-									placeholder="Marketing"
-								/>
-								<label className="block space-y-1.5">
-									<span className="text-sm font-medium text-kumo-default">
-										Board description
-									</span>
-									<textarea
-										className="min-h-20 w-full resize-y rounded-lg border border-kumo-line bg-kumo-recessed px-3 py-2 text-sm text-kumo-default placeholder:text-kumo-subtle focus:outline-none focus:ring-1 focus:ring-kumo-ring"
-										value={boardDescription}
-										onChange={(e) => setBoardDescription(e.target.value)}
-										placeholder="What this board is for"
-									/>
-								</label>
-							</section>
-						)}
-					</div>
+						</label>
+						<Input
+							label="Location"
+							value={location}
+							onChange={(e) => setLocation(e.target.value)}
+							placeholder="Ho Chi Minh City"
+						/>
+						<Input
+							label="Phone"
+							value={phone}
+							onChange={(e) => setPhone(e.target.value)}
+							placeholder="+84 ..."
+						/>
+						<Input
+							label="Website"
+							value={website}
+							onChange={(e) => setWebsite(e.target.value)}
+							placeholder="vsbg.vn"
+						/>
+						<Input label="Email" type="email" value={mailbox.email} disabled />
+					</section>
 				</div>
 			</div>
 		</div>
