@@ -13,6 +13,18 @@ test("resolveAccessOtpAutomation returns null when token missing", () => {
 	assert.equal(result, null);
 });
 
+test("resolveAccessOtpAutomation requires CF_API_EMAIL for global API key", () => {
+	const result = resolveAccessOtpAutomation(
+		{
+			CF_ACCOUNT_ID: "acc",
+			ACCESS_OTP_LIST_ID: "list",
+			CF_API_TOKEN: "cfk_example",
+		} as never,
+		{ domains: [], emailAddresses: [], accessEmailAddresses: [] },
+	);
+	assert.equal(result, null);
+});
+
 test("resolveAccessOtpAutomation prefers domain config over env", () => {
 	const result = resolveAccessOtpAutomation(
 		{

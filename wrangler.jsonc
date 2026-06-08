@@ -30,7 +30,9 @@
 		"ACCESS_EMAIL_ADDRESSES": [
 			"ceo@bdsmetro.com"
 		],
-		"CF_ACCOUNT_ID": "a23f698a1f594da1a6fb657c5bea74a8"
+		"CF_ACCOUNT_ID": "a23f698a1f594da1a6fb657c5bea74a8",
+		"ACCESS_OTP_LIST_ID": "4304b973-26ff-417b-9fac-254ebcbda942",
+		"CF_API_EMAIL": "ceo@bdsmetro.com"
 	},
 	"send_email": [
 		{

@@ -9,6 +9,28 @@ export interface AccessOtpAutomationConfig {
 	accountId: string;
 	listId: string;
 	apiToken: string;
+	apiEmail?: string;
+}
+
+function buildCloudflareAuthHeaders(
+	apiToken: string,
+	apiEmail?: string,
+): Record<string, string> {
+	if (apiToken.startsWith("cfk_")) {
+		const email = apiEmail?.trim() || "";
+		if (!email) {
+			throw new Error("CF_API_EMAIL is required when using a Global API Key");
+		}
+		return {
+			"X-Auth-Key": apiToken,
+			"X-Auth-Email": email,
+			"Content-Type": "application/json",
+		};
+	}
+	return {
+		Authorization: `Bearer ${apiToken}`,
+		"Content-Type": "application/json",
+	};
 }
 
 export interface AppendEmailResult {
@@ -25,8 +47,10 @@ export function resolveAccessOtpAutomation(
 	const listId =
 		domainConfig.accessOtpListId?.trim() || env.ACCESS_OTP_LIST_ID?.trim() || "";
 	const apiToken = env.CF_API_TOKEN?.trim() || "";
+	const apiEmail = env.CF_API_EMAIL?.trim() || "";
 	if (!accountId || !listId || !apiToken) return null;
-	return { accountId, listId, apiToken };
+	if (apiToken.startsWith("cfk_") && !apiEmail) return null;
+	return { accountId, listId, apiToken, ...(apiEmail ? { apiEmail } : {}) };
 }
 
 export function buildListAppendBody(email: string, description: string) {
@@ -49,10 +73,7 @@ export async function appendEmailToZeroTrustList(
 	const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(config.accountId)}/gateway/lists/${encodeURIComponent(config.listId)}`;
 	const response = await fetch(url, {
 		method: "PATCH",
-		headers: {
-			Authorization: `Bearer ${config.apiToken}`,
-			"Content-Type": "application/json",
-		},
+		headers: buildCloudflareAuthHeaders(config.apiToken, config.apiEmail),
 		body: JSON.stringify(buildListAppendBody(normalized, description)),
 	});
 	let payload: { success?: boolean; errors?: Array<{ message?: string }> } = {};

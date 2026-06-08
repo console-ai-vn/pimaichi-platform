@@ -9,6 +9,7 @@ export interface Env extends Cloudflare.Env {
 	DEMO_MODE?: string;
 	CF_ACCOUNT_ID?: string;
 	CF_API_TOKEN?: string;
+	CF_API_EMAIL?: string;
 	ACCESS_OTP_LIST_ID?: string;
 }
 
