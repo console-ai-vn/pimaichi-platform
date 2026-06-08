@@ -28,6 +28,24 @@ function mailboxDisplayName(mailbox: Mailbox) {
 	);
 }
 
+function fallbackMailbox(email: string): Mailbox {
+	const normalized = email.trim().toLowerCase();
+	return {
+		id: normalized,
+		email: normalized,
+		name: normalized.split("@")[0] || normalized,
+	};
+}
+
+function findMailboxByEmail(mailboxes: Mailbox[] | undefined, email: string) {
+	const normalized = email.trim().toLowerCase();
+	return mailboxes?.find(
+		(mailbox) =>
+			mailbox.email.toLowerCase() === normalized ||
+			mailbox.id.toLowerCase() === normalized,
+	);
+}
+
 function formatWebsite(url: string) {
 	try {
 		const parsed = new URL(url.includes("://") ? url : `https://${url}`);
@@ -46,18 +64,16 @@ export default function MemberProfileSheet({
 	const navigate = useNavigate();
 	const { startCompose, closeSidebar } = useUIStore();
 	const normalized = email.trim().toLowerCase();
-	const { data: mailboxes, isLoading: listLoading } = useMailboxes();
-	const cached = mailboxes?.find(
-		(mailbox) => mailbox.email.toLowerCase() === normalized,
-	);
+	const { data: mailboxes } = useMailboxes();
+	const cached = findMailboxByEmail(mailboxes, normalized);
 	const {
 		data: fetchedMailbox,
-		isLoading: fetchLoading,
+		isPending: fetchPending,
 		isError,
-	} = useMailbox(open && !cached ? normalized : undefined);
-	const mailbox = cached ?? fetchedMailbox;
+	} = useMailbox(open ? normalized : undefined);
+	const mailbox = fetchedMailbox ?? cached ?? (isError ? fallbackMailbox(normalized) : undefined);
 	const settings = mailbox?.settings;
-	const isLoading = open && (listLoading || (!cached && fetchLoading));
+	const isLoading = open && fetchPending && !mailbox;
 
 	if (!open) return null;
 
@@ -106,7 +122,7 @@ export default function MemberProfileSheet({
 						<div className="flex justify-center py-8">
 							<Loader />
 						</div>
-					) : isError || !mailbox ? (
+					) : !mailbox ? (
 						<p className="py-6 text-sm text-kumo-subtle">Could not load profile.</p>
 					) : (
 						<>

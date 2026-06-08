@@ -132,7 +132,7 @@ const api = {
 	createMailbox: (email: string, name: string, settings?: unknown) =>
 		post<Mailbox>("/api/v1/mailboxes", { email, name, settings }),
 	getMailbox: (mailboxId: string) =>
-		get<Mailbox>(`/api/v1/mailboxes/${mailboxId}`),
+		get<Mailbox>(`/api/v1/mailboxes/${encodeURIComponent(mailboxId)}`),
 	updateMailbox: (mailboxId: string, settings: unknown) =>
 		put<Mailbox>(`/api/v1/mailboxes/${mailboxId}`, { settings }),
 	uploadMailboxAvatar: (
