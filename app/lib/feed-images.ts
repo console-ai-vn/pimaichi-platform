@@ -1,6 +1,7 @@
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
-const MAX_FILES = 8;
+export const MAX_TOPIC_IMAGE_FILES = 8;
+export const MAX_COMMENT_IMAGE_FILES = 4;
 
 export interface FeedImageUpload {
 	content: string;
@@ -22,9 +23,10 @@ function readFileAsBase64(file: File): Promise<string> {
 export async function filesToFeedImages(
 	files: File[],
 	existingCount = 0,
+	maxFiles = MAX_TOPIC_IMAGE_FILES,
 ): Promise<FeedImageUpload[]> {
-	if (existingCount + files.length > MAX_FILES) {
-		throw new Error(`You can attach up to ${MAX_FILES} images.`);
+	if (existingCount + files.length > maxFiles) {
+		throw new Error(`You can attach up to ${maxFiles} images.`);
 	}
 
 	const uploads: FeedImageUpload[] = [];

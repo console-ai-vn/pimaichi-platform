@@ -12,6 +12,7 @@ import {
 	feedTopicImageKey,
 } from "../lib/feed-images";
 import { htmlToPlainText } from "../lib/feed-text";
+import { normalizeEmail } from "../lib/access";
 import { getOrgFeedStub } from "../lib/org-feed-stub";
 import type { AccessVariables, Env } from "../types";
 
@@ -173,8 +174,7 @@ homeApp.post("/topics/:topicId/comments", async (c) => {
 		);
 	}
 
-	const comments = await stub.listComments(topicId, 1, 100);
-	const created = comments.comments.find((entry) => entry.id === comment.id);
+	const created = await stub.getComment(comment.id);
 	return c.json(created ?? comment, 201);
 });
 
@@ -191,14 +191,21 @@ homeApp.put("/topics/:topicId/reaction", async (c) => {
 });
 
 homeApp.delete("/topics/:topicId", async (c) => {
-	try {
-		await assertHomeFeedAdmin(c.env, c.var.accessEmail);
-	} catch (error) {
-		return handleHomeError(c, error);
-	}
-
 	const topicId = c.req.param("topicId")!;
 	const stub = getOrgFeedStub(c.env);
+	const topic = await stub.getTopic(topicId);
+	if (!topic) return c.json({ error: "Not found" }, 404);
+
+	const viewer = normalizeEmail(c.var.accessEmail);
+	const isAuthor = viewer === normalizeEmail(topic.authorEmail);
+	if (!isAuthor) {
+		try {
+			await assertHomeFeedAdmin(c.env, c.var.accessEmail);
+		} catch (error) {
+			return handleHomeError(c, error);
+		}
+	}
+
 	const result = await stub.deleteTopic(topicId);
 	if (!result) return c.json({ error: "Not found" }, 404);
 	if (result.r2Keys.length > 0) {
@@ -208,14 +215,24 @@ homeApp.delete("/topics/:topicId", async (c) => {
 });
 
 homeApp.delete("/topics/:topicId/comments/:commentId", async (c) => {
-	try {
-		await assertHomeFeedAdmin(c.env, c.var.accessEmail);
-	} catch (error) {
-		return handleHomeError(c, error);
-	}
-
+	const topicId = c.req.param("topicId")!;
 	const commentId = c.req.param("commentId")!;
 	const stub = getOrgFeedStub(c.env);
+	const comment = await stub.getComment(commentId);
+	if (!comment || comment.topicId !== topicId) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	const viewer = normalizeEmail(c.var.accessEmail);
+	const isAuthor = viewer === normalizeEmail(comment.authorEmail);
+	if (!isAuthor) {
+		try {
+			await assertHomeFeedAdmin(c.env, c.var.accessEmail);
+		} catch (error) {
+			return handleHomeError(c, error);
+		}
+	}
+
 	const result = await stub.deleteComment(commentId);
 	if (!result) return c.json({ error: "Not found" }, 404);
 	if (result.r2Keys.length > 0) {

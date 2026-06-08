@@ -1,6 +1,10 @@
 import { useState } from "react";
 import MailboxAvatar from "~/components/MailboxAvatar";
 import { getAvatarVersion, useAvatarVersionMap } from "~/hooks/useAvatarVersions";
+import {
+	resolveMemberDisplayName,
+	useMemberDisplayNames,
+} from "~/hooks/useMemberDisplayNames";
 import MemberProfileSheet from "./MemberProfileSheet";
 
 interface MemberProfileTriggerProps {
@@ -22,8 +26,9 @@ export default function MemberProfileTrigger({
 }: MemberProfileTriggerProps) {
 	const [open, setOpen] = useState(false);
 	const avatarVersions = useAvatarVersionMap();
+	const displayNames = useMemberDisplayNames();
 	const normalized = email.trim().toLowerCase();
-	const displayName = name || normalized.split("@")[0] || email;
+	const displayName = resolveMemberDisplayName(displayNames, normalized, name);
 	const avatarVersion = getAvatarVersion(avatarVersions, normalized);
 
 	const buttonClassName =

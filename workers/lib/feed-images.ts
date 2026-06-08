@@ -1,4 +1,4 @@
-import { assertImageMagicBytes } from "./image-bytes";
+import { assertImageMagicBytes } from "./image-bytes.ts";
 
 const ALLOWED_FEED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 export const MAX_FEED_IMAGE_BYTES = 4 * 1024 * 1024;

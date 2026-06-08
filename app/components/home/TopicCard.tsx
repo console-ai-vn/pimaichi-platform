@@ -1,3 +1,4 @@
+import { ChatCircleIcon } from "@phosphor-icons/react";
 import { Link, useParams } from "react-router";
 import { formatListDate } from "shared/dates";
 import MemberProfileTrigger from "~/components/home/MemberProfileTrigger";
@@ -12,7 +13,7 @@ export default function TopicCard({ topic }: { topic: HomeTopic }) {
 	const thumb = topic.images[0];
 
 	return (
-		<article className="rounded-xl border border-kumo-line bg-kumo-base p-4 shadow-sm">
+		<article className="rounded-xl border border-kumo-line bg-kumo-base p-4 shadow-sm transition-colors hover:border-kumo-brand/30">
 			<div className="flex items-start gap-3">
 				<MemberProfileTrigger
 					email={topic.authorEmail}
@@ -21,7 +22,7 @@ export default function TopicCard({ topic }: { topic: HomeTopic }) {
 					layout="avatar-only"
 				/>
 				<div className="min-w-0 flex-1">
-					<div className="flex items-center justify-between gap-2">
+					<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
 						<MemberProfileTrigger
 							email={topic.authorEmail}
 							showName
@@ -38,21 +39,28 @@ export default function TopicCard({ topic }: { topic: HomeTopic }) {
 					>
 						{topic.title}
 					</Link>
-					<p className="mt-1 text-sm text-kumo-subtle line-clamp-3">{preview}</p>
+					<Link to={topicPath} className="mt-1 block">
+						<p className="text-sm text-kumo-subtle line-clamp-3">{preview}</p>
+					</Link>
 					{thumb && (
-						<img
-							src={api.homeTopicImageUrl(topic.id, thumb.id)}
-							alt=""
-							className="mt-3 max-h-48 w-full rounded-lg object-cover"
-						/>
+						<Link to={topicPath} className="mt-3 block">
+							<img
+								src={api.homeTopicImageUrl(topic.id, thumb.id)}
+								alt=""
+								className="max-h-56 w-full rounded-lg object-cover"
+							/>
+						</Link>
 					)}
-					<div className="mt-3 flex items-center justify-between gap-3">
+					<div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-kumo-line pt-3">
 						<ReactionBar topic={topic} />
 						<Link
 							to={topicPath}
-							className="text-sm text-kumo-link hover:underline"
+							className="inline-flex items-center gap-1 text-sm text-kumo-link hover:underline"
 						>
-							{topic.commentCount} comments
+							<ChatCircleIcon size={16} />
+							{topic.commentCount === 1
+								? "1 comment"
+								: `${topic.commentCount} comments`}
 						</Link>
 					</div>
 				</div>

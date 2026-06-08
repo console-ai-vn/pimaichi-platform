@@ -8,9 +8,10 @@ import CommentComposer from "~/components/home/CommentComposer";
 import CommentList from "~/components/home/CommentList";
 import ReactionBar from "~/components/home/ReactionBar";
 import MemberProfileTrigger from "~/components/home/MemberProfileTrigger";
+import { isSameMemberEmail, useViewerEmail } from "~/hooks/useViewerEmail";
 import {
 	useDeleteHomeTopic,
-	useHomeComments,
+	useHomeCommentsInfinite,
 	useHomeTopic,
 } from "~/queries/home-feed";
 import { queryKeys } from "~/queries/keys";
@@ -27,8 +28,15 @@ export default function HomeTopicRoute() {
 	}>();
 	const navigate = useNavigate();
 	const toast = useKumoToastManager();
+	const viewerEmail = useViewerEmail();
 	const { data: topic, isLoading, isError } = useHomeTopic(topicId);
-	const { data: commentsData, isLoading: commentsLoading } = useHomeComments(topicId);
+	const {
+		data: commentsPages,
+		isLoading: commentsLoading,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useHomeCommentsInfinite(topicId);
 	const deleteTopic = useDeleteHomeTopic();
 	const { data: config } = useQuery({
 		queryKey: queryKeys.config,
@@ -36,6 +44,9 @@ export default function HomeTopicRoute() {
 		staleTime: 60_000,
 	});
 	const isAdmin = config?.isAdmin ?? false;
+	const comments = commentsPages?.pages.flatMap((page) => page.comments) ?? [];
+	const canDeleteTopic =
+		isAdmin || (topic ? isSameMemberEmail(viewerEmail, topic.authorEmail) : false);
 
 	const handleDeleteTopic = async () => {
 		if (!topicId || !topic) return;
@@ -71,8 +82,8 @@ export default function HomeTopicRoute() {
 				</Button>
 			</Link>
 
-			<article className="rounded-xl border border-kumo-line bg-kumo-base p-5">
-				{isAdmin && (
+			<article className="rounded-xl border border-kumo-line bg-kumo-base p-5 shadow-sm">
+				{canDeleteTopic && (
 					<div className="mb-3 flex justify-end">
 						<Button
 							variant="ghost"
@@ -81,7 +92,7 @@ export default function HomeTopicRoute() {
 							loading={deleteTopic.isPending}
 							onClick={() => void handleDeleteTopic()}
 						>
-							Delete topic
+							Delete post
 						</Button>
 					</div>
 				)}
@@ -93,14 +104,20 @@ export default function HomeTopicRoute() {
 						layout="avatar-only"
 					/>
 					<div className="min-w-0 flex-1">
-						<MemberProfileTrigger
-							email={topic.authorEmail}
-							showName
-							layout="name-only"
-							nameClassName="font-medium"
-						/>
-						<p className="text-xs text-kumo-subtle">{formatListDate(topic.createdAt)}</p>
-						<h1 className="mt-2 text-xl font-semibold text-kumo-default">{topic.title}</h1>
+						<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+							<MemberProfileTrigger
+								email={topic.authorEmail}
+								showName
+								layout="name-only"
+								nameClassName="font-semibold"
+							/>
+							<span className="text-xs text-kumo-subtle">
+								{formatListDate(topic.createdAt)}
+							</span>
+						</div>
+						<h1 className="mt-2 text-xl font-semibold text-kumo-default">
+							{topic.title}
+						</h1>
 						<div
 							className="prose prose-sm mt-3 max-w-none text-kumo-default"
 							dangerouslySetInnerHTML={{ __html: topic.bodyHtml }}
@@ -117,14 +134,14 @@ export default function HomeTopicRoute() {
 								))}
 							</div>
 						)}
-						<div className="mt-4">
+						<div className="mt-4 border-t border-kumo-line pt-3">
 							<ReactionBar topic={topic} />
 						</div>
 					</div>
 				</div>
 			</article>
 
-			<section className="rounded-xl border border-kumo-line bg-kumo-base p-5">
+			<section className="rounded-xl border border-kumo-line bg-kumo-base p-5 shadow-sm">
 				<h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-kumo-subtle">
 					Comments ({topic.commentCount})
 				</h2>
@@ -134,10 +151,23 @@ export default function HomeTopicRoute() {
 					</div>
 				) : (
 					<CommentList
-						comments={commentsData?.comments ?? []}
+						comments={comments}
 						topicId={topic.id}
+						viewerEmail={viewerEmail}
 						isAdmin={isAdmin}
 					/>
+				)}
+				{hasNextPage && (
+					<div className="flex justify-center py-3">
+						<Button
+							variant="secondary"
+							size="sm"
+							loading={isFetchingNextPage}
+							onClick={() => void fetchNextPage()}
+						>
+							Load more comments
+						</Button>
+					</div>
 				)}
 				<CommentComposer topicId={topic.id} />
 			</section>

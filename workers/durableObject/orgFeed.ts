@@ -90,7 +90,12 @@ export class OrgFeedDO extends DurableObject<Env> {
 			}),
 		);
 
-		return { topics, totalCount: total, page, limit: safeLimit };
+		return {
+			topics,
+			totalCount: total,
+			page: Math.max(page, 1),
+			limit: safeLimit,
+		};
 	}
 
 	async getTopic(topicId: string, viewerEmail?: string) {
@@ -148,8 +153,15 @@ export class OrgFeedDO extends DurableObject<Env> {
 	}
 
 	async listComments(topicId: string, page = 1, limit = 50) {
+		const safePage = Math.max(page, 1);
 		const safeLimit = Math.min(Math.max(limit, 1), 100);
-		const offset = (Math.max(page, 1) - 1) * safeLimit;
+		const offset = (safePage - 1) * safeLimit;
+		const total =
+			this.db
+				.select({ count: sql<number>`count(*)` })
+				.from(feedSchema.comments)
+				.where(eq(feedSchema.comments.topic_id, topicId))
+				.get()?.count ?? 0;
 		const rows = this.db
 			.select()
 			.from(feedSchema.comments)
@@ -181,7 +193,36 @@ export class OrgFeedDO extends DurableObject<Env> {
 			};
 		});
 
-		return { comments, page, limit: safeLimit };
+		return { comments, totalCount: total, page: safePage, limit: safeLimit };
+	}
+
+	async getComment(commentId: string) {
+		const row = this.db
+			.select()
+			.from(feedSchema.comments)
+			.where(eq(feedSchema.comments.id, commentId))
+			.get();
+		if (!row) return null;
+
+		const images = this.db
+			.select()
+			.from(feedSchema.commentImages)
+			.where(eq(feedSchema.commentImages.comment_id, commentId))
+			.all();
+		return {
+			id: row.id,
+			topicId: row.topic_id,
+			authorEmail: row.author_email,
+			bodyHtml: row.body_html,
+			bodyText: row.body_text,
+			createdAt: row.created_at,
+			images: images.map((image) => ({
+				id: image.id,
+				contentType: image.content_type,
+				sizeBytes: image.size_bytes,
+				createdAt: image.created_at,
+			})),
+		};
 	}
 
 	async createComment(

@@ -187,6 +187,7 @@ export interface HomeTopicListResponse {
 
 export interface HomeCommentListResponse {
 	comments: HomeComment[];
+	totalCount: number;
 	page: number;
 	limit: number;
 }

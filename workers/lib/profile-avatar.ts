@@ -1,4 +1,4 @@
-import { assertImageMagicBytes } from "./image-bytes";
+import { assertImageMagicBytes } from "./image-bytes.ts";
 
 const ALLOWED_PROFILE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;

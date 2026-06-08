@@ -314,10 +314,10 @@ const api = {
 		body: string;
 		images?: Array<{ content: string; type: string }>;
 	}) => post<HomeTopic>("/api/v1/home/topics", payload),
-	listHomeComments: (topicId: string, page = 1) =>
+	listHomeComments: (topicId: string, page = 1, limit = 50) =>
 		get<HomeCommentListResponse>(
 			`/api/v1/home/topics/${encodeURIComponent(topicId)}/comments`,
-			{ params: { page: String(page) } },
+			{ params: { page: String(page), limit: String(limit) } },
 		),
 	createHomeComment: (
 		topicId: string,
