@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@cloudflare/kumo"
 import {
   UserCircle,
@@ -20,8 +21,14 @@ export default function ProfileTab() {
   const [isCreatorMode, setIsCreatorMode] = useState(false)
   const [showWithdrawToast, setShowWithdrawToast] = useState(false)
 
-  // In a real app, the creatorId would come from the logged-in user's mailbox
-  const creatorId = "me"
+  const { data: config } = useQuery({
+    queryKey: ["config"],
+    queryFn: () => fetch("/api/v1/config").then(r => r.json()) as Promise<{ accessEmail: string | null }>,
+    staleTime: 60_000,
+  })
+
+  const userEmail = config?.accessEmail || "user@onyx.com.vn"
+  const creatorId = userEmail
 
   const { data: earnings } = useEarnings(creatorId)
 
@@ -46,7 +53,7 @@ export default function ProfileTab() {
           <h1 className="text-lg font-bold text-kumo-default truncate">
             Your Profile
           </h1>
-          <p className="text-sm text-kumo-subtle">user@onyx.com.vn</p>
+          <p className="text-sm text-kumo-subtle">{userEmail}</p>
         </div>
       </div>
 
