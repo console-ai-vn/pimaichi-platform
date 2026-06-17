@@ -22,7 +22,7 @@
 		// The worker now fails closed outside local development if Access is not configured.
 		"DOMAINS": "onyx.com.vn",
 		"EMAIL_ADDRESSES": ["admin@onyx.com.vn", "test@onyx.com.vn"],
-		"ACCESS_EMAIL_ADDRESSES": ["ceo@bdsmetro.com"],
+		"ACCESS_EMAIL_ADDRESSES": ["ceo@bdsmetro.com", "admin@onyx.com.vn"],
 		"CF_ACCOUNT_ID": "a23f698a1f594da1a6fb657c5bea74a8",
 		"ACCESS_OTP_LIST_ID": "4304b973-26ff-417b-9fac-254ebcbda942",
 		"CF_API_EMAIL": "ceo@bdsmetro.com",
