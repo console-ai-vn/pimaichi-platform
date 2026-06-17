@@ -1,6 +1,6 @@
 ---
-title: "Home Social Feed — tách khỏi mailbox cá nhân"
-description: "Khu vực /home với topics, comment, like/dislike, ảnh — data riêng OrgFeedDO, không trộn inbox cá nhân."
+title: "Home Social Feed � t�ch kh?i mailbox c� nh�n"
+description: "Khu v?c /home v?i topics, comment, like/dislike, ?nh � data ri�ng OrgFeedDO, kh�ng tr?n inbox c� nh�n."
 status: completed
 execution: incremental
 priority: P0
@@ -12,46 +12,46 @@ created: 2026-06-08
 
 # Home Social Feed Plan
 
-## Vấn đề
+## V?n d?
 
-| Hiện tại | User muốn |
+| Hi?n t?i | User mu?n |
 |----------|-----------|
-| "Feed" = inbox cá nhân (`/mailbox/:id/emails/inbox`) | Mailbox cá nhân = **email thuần** (Inbox/Sent/Drafts) |
-| Board = public mailbox, topic = gửi email | **Home** = khu org-wide, topic do admin tạo |
-| Reply = email thread | **Comment** = hành vi social, không phải email |
-| Không có like/dislike | Like + Dislike trên topic |
-| Ảnh qua email attachment | Upload ảnh trực tiếp trong topic/comment |
+| "Feed" = inbox c� nh�n (`/mailbox/:id/emails/inbox`) | Mailbox c� nh�n = **email thu?n** (Inbox/Sent/Drafts) |
+| Board = public mailbox, topic = g?i email | **Home** = khu org-wide, topic do admin t?o |
+| Reply = email thread | **Comment** = h�nh vi social, kh�ng ph?i email |
+| Kh�ng c� like/dislike | Like + Dislike tr�n topic |
+| ?nh qua email attachment | Upload ?nh tr?c ti?p trong topic/comment |
 
-**Pivot có chủ đích:** Plan `260605-email-social-network` ghi non-goal "feed detached from email" — user override 2026-06-08.
+**Pivot c� ch? d�ch:** Plan `260605-email-social-network` ghi non-goal "feed detached from email" � user override 2026-06-08.
 
 ## Success Criteria (MVP)
 
-- [ ] Route `/home` hiển thị danh sách topics (card: author, title, preview, ảnh thumb, like/dislike counts, comment count)
-- [ ] Admin (`ACCESS_EMAIL_ADDRESSES`) tạo topic mới + upload ảnh (≤4MB, JPEG/PNG/WebP)
-- [ ] Mọi org member (`EMAIL_ADDRESSES` + `ACCESS_EMAIL_ADDRESSES`) comment + like/dislike
-- [ ] Topic detail `/home/topics/:id` — thread comment + reaction bar
-- [ ] Mailbox cá nhân: folder inbox label = **Inbox** (bỏ "Relationship Feed"); không còn "New topic" trong sidebar mailbox
-- [ ] Board mailbox cũ vẫn hoạt động (không break) nhưng Home là surface chính cho social
-- [ ] Tests + typecheck pass; deploy `box.vsbg.vn`
+- [ ] Route `/home` hi?n th? danh s�ch topics (card: author, title, preview, ?nh thumb, like/dislike counts, comment count)
+- [ ] Admin (`ACCESS_EMAIL_ADDRESSES`) t?o topic m?i + upload ?nh (=4MB, JPEG/PNG/WebP)
+- [ ] M?i org member (`EMAIL_ADDRESSES` + `ACCESS_EMAIL_ADDRESSES`) comment + like/dislike
+- [ ] Topic detail `/home/topics/:id` � thread comment + reaction bar
+- [ ] Mailbox c� nh�n: folder inbox label = **Inbox** (b? "Relationship Feed"); kh�ng c�n "New topic" trong sidebar mailbox
+- [ ] Board mailbox cu v?n ho?t d?ng (kh�ng break) nhung Home l� surface ch�nh cho social
+- [ ] Tests + typecheck pass; deploy `box.onyx.com.vn`
 
-## 3 hướng đã xem
+## 3 hu?ng d� xem
 
-| # | Hướng | Effort | Trade-off |
+| # | Hu?ng | Effort | Trade-off |
 |---|--------|--------|-----------|
-| A | **OrgFeedDO mới** — SQLite topics/comments/reactions | ~5 ngày | ✅ UX social thuần, tách email; cần DO migration |
-| B | Reuse board mailbox + email reply | ~2 ngày | ❌ Vẫn giống email, like/dislike phải nhồi vào MailboxDO |
-| C | Hybrid FeedDO + email notify khi topic mới | ~7 ngày | Overkill MVP |
+| A | **OrgFeedDO m?i** � SQLite topics/comments/reactions | ~5 ng�y | ? UX social thu?n, t�ch email; c?n DO migration |
+| B | Reuse board mailbox + email reply | ~2 ng�y | ? V?n gi?ng email, like/dislike ph?i nh?i v�o MailboxDO |
+| C | Hybrid FeedDO + email notify khi topic m?i | ~7 ng�y | Overkill MVP |
 
-**Chọn A** — đúng yêu cầu "tách riêng", schema gọn, ship trong 1 sprint ADHD.
+**Ch?n A** � d�ng y�u c?u "t�ch ri�ng", schema g?n, ship trong 1 sprint ADHD.
 
-## Kiến trúc
+## Ki?n tr�c
 
 ```mermaid
 flowchart LR
     subgraph ui [Frontend]
         Home["/home"]
         TopicDetail["/home/topics/:id"]
-        Mailbox["/mailbox/:id — email only"]
+        Mailbox["/mailbox/:id � email only"]
     end
 
     subgraph api [Worker API]
@@ -59,7 +59,7 @@ flowchart LR
     end
 
     subgraph data [Storage]
-        FeedDO["OrgFeedDO — 1 per org"]
+        FeedDO["OrgFeedDO � 1 per org"]
         R2["R2 feed/{topicId}/..."]
     end
 
@@ -67,16 +67,16 @@ flowchart LR
     TopicDetail --> FeedAPI
     FeedAPI --> FeedDO
     FeedAPI --> R2
-    Mailbox --> MailboxDO["MailboxDO — unchanged"]
+    Mailbox --> MailboxDO["MailboxDO � unchanged"]
 ```
 
-**OrgFeedDO:** `idFromName("vsbg-home")` — single instance, SQLite:
+**OrgFeedDO:** `idFromName("onyx-home")` � single instance, SQLite:
 - `topics`, `topic_images`, `comments`, `comment_images`, `topic_reactions`
 
 **Access model:**
-- `read` — bất kỳ ai có org membership (cùng rule `filterMailboxIdsForAccess` / platform admin)
-- `create_topic` — `ACCESS_EMAIL_ADDRESSES` (admin) MVP; phase sau mở `member`
-- `comment` / `react` — mọi org member
+- `read` � b?t k? ai c� org membership (c�ng rule `filterMailboxIdsForAccess` / platform admin)
+- `create_topic` � `ACCESS_EMAIL_ADDRESSES` (admin) MVP; phase sau m? `member`
+- `comment` / `react` � m?i org member
 
 ## Phases
 
@@ -85,24 +85,24 @@ flowchart LR
 | 01 | [phase-01-org-feed-do-api.md](./phase-01-org-feed-do-api.md) | FeedDO + migrations + REST API |
 | 02 | [phase-02-home-ui.md](./phase-02-home-ui.md) | `/home` list + create topic + images |
 | 03 | [phase-03-comments-reactions.md](./phase-03-comments-reactions.md) | Comment thread + like/dislike |
-| 04 | [phase-04-nav-separation.md](./phase-04-nav-separation.md) | Tách nav, rename inbox, redirect defaults |
+| 04 | [phase-04-nav-separation.md](./phase-04-nav-separation.md) | T�ch nav, rename inbox, redirect defaults |
 | 05 | [phase-05-ship.md](./phase-05-ship.md) | Tests, deploy, smoke |
 
 ## Dependencies
 
-- Reuse: `profile-avatar.ts` decode/validate pattern cho ảnh feed
+- Reuse: `profile-avatar.ts` decode/validate pattern cho ?nh feed
 - Reuse: `access.ts` / `isPlatformAdmin` cho auth
 - Reuse: `MailboxAvatar` component cho author chip
-- Không đụng: send/receive email pipeline, MailboxDO email tables
+- Kh�ng d?ng: send/receive email pipeline, MailboxDO email tables
 
 ## Risks
 
 | Risk | Mitigation |
 |------|------------|
-| Thêm DO = wrangler migration | Tag `v4`, class `OrgFeedDO` |
-| Fan-out chậm | Single DO — OK đến ~10k topics; paginate |
+| Th�m DO = wrangler migration | Tag `v4`, class `OrgFeedDO` |
+| Fan-out ch?m | Single DO � OK d?n ~10k topics; paginate |
 | Like brigading | 1 reaction/user/topic, toggle |
-| XSS trong body | Sanitize HTML giống compose (existing lib) |
+| XSS trong body | Sanitize HTML gi?ng compose (existing lib) |
 
 ## Out of scope (MVP)
 
@@ -110,22 +110,22 @@ flowchart LR
 - Edit/delete topic
 - Push notifications
 - Board mailbox deprecation / migration
-- Email notify khi có topic mới
+- Email notify khi c� topic m?i
 
 ## Execution strategy (user 2026-06-08)
 
-**Làm lần lượt — test/debug xong mới phase tiếp.** Không nhảy phase.
+**L�m l?n lu?t � test/debug xong m?i phase ti?p.** Kh�ng nh?y phase.
 
-| Gate | Trước khi sang phase sau |
+| Gate | Tru?c khi sang phase sau |
 |------|--------------------------|
-| P01 → P02 | `pnpm test` + `pnpm typecheck` + curl API tạo/list topic |
-| P02 → P03 | UI `/home` load + admin tạo topic + ảnh trên browser |
-| P03 → P04 | Comment + like/dislike smoke 2 users |
-| P04 → P05 | Nav đúng: login → `/home`, mailbox = Inbox |
+| P01 ? P02 | `pnpm test` + `pnpm typecheck` + curl API t?o/list topic |
+| P02 ? P03 | UI `/home` load + admin t?o topic + ?nh tr�n browser |
+| P03 ? P04 | Comment + like/dislike smoke 2 users |
+| P04 ? P05 | Nav d�ng: login ? `/home`, mailbox = Inbox |
 | P05 | `pnpm deploy` + prod smoke |
 
 ## Next step
 
-**Switch Cursor → Agent mode**, rồi gõ: `cook phase 01 home feed`
+**Switch Cursor ? Agent mode**, r?i g�: `cook phase 01 home feed`
 
 Plan path: `docs/plans/260608-home-social-feed/phase-01-org-feed-do-api.md`

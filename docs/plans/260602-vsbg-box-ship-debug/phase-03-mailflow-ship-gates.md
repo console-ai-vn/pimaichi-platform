@@ -17,7 +17,7 @@
 
 - Inbound Feed works.
 - Outbound reply/compose not proven.
-- Cloudflare Email Sending CLI returned 404 earlier for `vsbg.vn`.
+- Cloudflare Email Sending CLI returned 404 earlier for `onyx.com.vn`.
 - App must not create fake Sent success if provider cannot deliver.
 
 ## Requirements
@@ -44,8 +44,8 @@
 
 1. Verify Cloudflare Email Sending:
    ```powershell
-   npx.cmd wrangler email sending settings vsbg.vn
-   npx.cmd wrangler email sending enable vsbg.vn
+   npx.cmd wrangler email sending settings onyx.com.vn
+   npx.cmd wrangler email sending enable onyx.com.vn
    ```
 2. If Cloudflare Sending unavailable, set:
    ```json

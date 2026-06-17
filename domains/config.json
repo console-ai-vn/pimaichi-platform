@@ -1,12 +1,5 @@
 {
-  "domains": [
-    "vsbg.vn"
-  ],
-  "emailAddresses": [
-    "admin@vsbg.vn",
-    "test@vsbg.vn"
-  ],
-  "accessEmailAddresses": [
-    "ceo@bdsmetro.com"
-  ]
+	"domains": ["onyx.com.vn"],
+	"emailAddresses": ["admin@onyx.com.vn", "test@onyx.com.vn"],
+	"accessEmailAddresses": ["ceo@bdsmetro.com"]
 }

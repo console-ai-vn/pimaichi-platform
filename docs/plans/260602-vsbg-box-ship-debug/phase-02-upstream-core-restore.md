@@ -8,27 +8,27 @@
 ## Overview
 
 - Date: 2026-06-02
-- Description: Đưa mail rendering/attachments về upstream-compatible core, chỉ patch phần có evidence.
+- Description: �ua mail rendering/attachments v? upstream-compatible core, ch? patch ph?n c� evidence.
 - Priority: P0
 - Implementation status: pending
 - Review status: pending
 
 ## Key Insights
 
-- Upstream đã có `rewriteInlineImages`, attachment storage, iframe renderer.
-- Dirty changes hiện tại có thể đã relax security và đổi semantics cid.
-- Restore trước, patch sau.
+- Upstream d� c� `rewriteInlineImages`, attachment storage, iframe renderer.
+- Dirty changes hi?n t?i c� th? d� relax security v� d?i semantics cid.
+- Restore tru?c, patch sau.
 
 ## Requirements
 
-- Preserve VSBG Access overlay.
+- Preserve ONYX Access overlay.
 - Preserve admin mailbox config.
 - Avoid broad rewrites of cid behavior unless evidence requires.
 
 ## Architecture
 
 - Upstream core files should remain close to upstream.
-- VSBG-specific logic stays in Access/mailbox overlay.
+- ONYX-specific logic stays in Access/mailbox overlay.
 
 ## Related code files
 

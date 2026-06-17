@@ -21,8 +21,8 @@ npm run dev                 # pass, verified at localhost:5190 during smoke
 - [x] Confirm inbox cards fit without horizontal scroll.
 - [x] Confirm conversation sticky action bar is reachable.
 - [x] Confirm context/profile opens as sheet or drill-in.
-- [x] Create or open `admin@vsbg.vn` route.
-- [x] Send test email from `admin@vsbg.vn` to `test@vsbg.vn` and receive it in test inbox through live API internal delivery.
+- [x] Create or open `admin@onyx.com.vn` route.
+- [x] Send test email from `admin@onyx.com.vn` to `test@onyx.com.vn` and receive it in test inbox through live API internal delivery.
 - [x] Confirm contact/profile appears.
 - [x] Add internal note.
 - [x] Reply to sender.
@@ -35,7 +35,7 @@ npm run dev                 # pass, verified at localhost:5190 during smoke
 ## HTTP Smoke
 
 - [x] `GET /` returns 200.
-- [x] `GET /mailbox/admin@vsbg.vn/emails/inbox` returns 200.
+- [x] `GET /mailbox/admin@onyx.com.vn/emails/inbox` returns 200.
 - [x] `POST /mcp` initialize returns 200 and session id.
 - [x] `POST /mcp` `tools/list` includes:
   - `get_contact_profile`
@@ -56,9 +56,9 @@ npm run dev                 # pass, verified at localhost:5190 during smoke
 
 ## Live API Smoke
 
-- [x] Local dev config exposes `admin@vsbg.vn` and `test@vsbg.vn`.
-- [x] `POST /api/v1/mailboxes/admin@vsbg.vn/emails` sends to configured internal mailbox.
-- [x] `GET /api/v1/mailboxes/test@vsbg.vn/emails?folder=inbox` finds delivered message.
+- [x] Local dev config exposes `admin@onyx.com.vn` and `test@onyx.com.vn`.
+- [x] `POST /api/v1/mailboxes/admin@onyx.com.vn/emails` sends to configured internal mailbox.
+- [x] `GET /api/v1/mailboxes/test@onyx.com.vn/emails?folder=inbox` finds delivered message.
 - [x] `POST /threads/:threadId/notes` creates private internal note.
 - [x] `PATCH /threads/:threadId/state` updates `waiting`, `high`, assignee, and `needs_reply`.
 - [x] `GET /threads/:threadId/events` includes `note_created` and `state_updated`.
@@ -70,7 +70,7 @@ npm run dev                 # pass, verified at localhost:5190 during smoke
 
 - Mounted `EmailMCP.serve("/mcp", { binding: "EMAIL_MCP" })` in `workers/app.ts`.
 - Replaced the previous hard-coded `/mcp` 404 handlers.
-- Restored local smoke parity by configuring `wrangler.local.jsonc` with `admin@vsbg.vn`, `test@vsbg.vn`, and `ceo@bdsmetro.com`; local config had an empty mailbox allowlist, so internal delivery treated `test@vsbg.vn` as external.
+- Restored local smoke parity by configuring `wrangler.local.jsonc` with `admin@onyx.com.vn`, `test@onyx.com.vn`, and `ceo@bdsmetro.com`; local config had an empty mailbox allowlist, so internal delivery treated `test@onyx.com.vn` as external.
 
 ## Deferred Preview Checks
 
@@ -88,5 +88,5 @@ npm run dev                 # pass, verified at localhost:5190 during smoke
 
 ## Unresolved Questions
 
-- Need production test mailbox beyond `admin@vsbg.vn`?
+- Need production test mailbox beyond `admin@onyx.com.vn`?
 - Need screenshot evidence in docs/reports before deploy?

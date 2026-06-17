@@ -1,6 +1,6 @@
 # Scout 01 - Codebase Map
 
-Scope: VSBG Box ship-debug plan. No implementation.
+Scope: ONYX ship-debug plan. No implementation.
 
 ## Required docs
 
@@ -24,7 +24,7 @@ Scope: VSBG Box ship-debug plan. No implementation.
   - `workers/email-sender.ts`
   - `workers/lib/attachments.ts`
   - `workers/durableObject/index.ts`
-- VSBG auth/config overlay:
+- ONYX auth/config overlay:
   - `workers/app.ts`
   - `workers/lib/access.ts`
   - `workers/lib/mailbox.ts`
@@ -43,9 +43,9 @@ Scope: VSBG Box ship-debug plan. No implementation.
 
 ## Current config evidence
 
-- Worker: `vsbg-box`.
-- Custom domain route: `box.vsbg.vn`.
-- Mailbox allowlist: `admin@vsbg.vn`.
+- Worker: `onyx-email`.
+- Custom domain route: `box.onyx.com.vn`.
+- Mailbox allowlist: `admin@onyx.com.vn`.
 - Access login members: `ceo@bdsmetro.com`.
 - Send Email binding exists as `EMAIL`, remote true.
 

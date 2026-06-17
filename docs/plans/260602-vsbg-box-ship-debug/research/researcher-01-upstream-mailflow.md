@@ -54,7 +54,7 @@
   - `C:\Users\Mr.D\Desktop\Email Web\workers\routes\reply-forward.ts`
 
 ## Unresolved questions
-- What is the exact VSBG Box symptom: blank body, broken inline images, missing attachments, bad download behavior, or disabled forward?
+- What is the exact ONYX symptom: blank body, broken inline images, missing attachments, bad download behavior, or disabled forward?
 - Is the failing case inbound mail, reply mail, or forward mail?
 - Are the missing objects image-only, or does the bug expect PDFs/docs to be preserved too?
 - Does the current bug happen only behind Cloudflare Access, or also locally without auth cookies?

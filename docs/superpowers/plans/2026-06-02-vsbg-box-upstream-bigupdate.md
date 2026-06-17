@@ -1,10 +1,10 @@
-# VSBG Box Upstream Big-Update Implementation Plan
+# ONYX Upstream Big-Update Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a stable MVP by preserving Cloudflare Agentic Inbox upstream behavior for mail/attachments/send, then layering only VSBG-specific Access, routing, branding, and admin mailbox permissions.
+**Goal:** Ship a stable MVP by preserving Cloudflare Agentic Inbox upstream behavior for mail/attachments/send, then layering only ONYX-specific Access, routing, branding, and admin mailbox permissions.
 
-**Architecture:** Treat `cloudflare/agentic-inbox` as the source-of-truth core. Revert ad-hoc patches where upstream already has working behavior, add a thin VSBG overlay module for authentication/authorization, and gate risky outbound mail behind explicit Cloudflare Email Sending readiness checks.
+**Architecture:** Treat `cloudflare/agentic-inbox` as the source-of-truth core. Revert ad-hoc patches where upstream already has working behavior, add a thin ONYX overlay module for authentication/authorization, and gate risky outbound mail behind explicit Cloudflare Email Sending readiness checks.
 
 **Tech Stack:** React Router, Hono Worker, Cloudflare Access, Email Routing, Send Email binding, Durable Objects SQLite, R2, Wrangler, Node test runner.
 
@@ -15,8 +15,8 @@
 MVP is not "all email features". MVP is:
 
 - Login via Cloudflare Access OTP using `ceo@bdsmetro.com`.
-- One shared mailbox: `admin@vsbg.vn`.
-- Inbound mail to `admin@vsbg.vn` appears in Team Feed.
+- One shared mailbox: `admin@onyx.com.vn`.
+- Inbound mail to `admin@onyx.com.vn` appears in Team Feed.
 - Inline/attached images from inbound mail render using upstream-compatible behavior.
 - Outbound compose/reply either sends successfully through a verified provider or visibly reports "outbound not configured"; no fake sent state.
 - Repo has clean commits, passing tests/typecheck/build, and no leaked key committed.
@@ -26,7 +26,7 @@ MVP is not "all email features". MVP is:
 - Upstream remote: `https://github.com/cloudflare/agentic-inbox.git`.
 - Current branch: `metro-mail-v1`.
 - Current commits above upstream:
-  - `5ea9541 feat: Ship VSBG Box MVP`
+  - `5ea9541 feat: Ship ONYX MVP`
   - `93c7066 feat: Configure admin mailbox routing`
   - `c43d393 fix: Verify Access team domain URL`
   - `ec396af fix: Render inline images and report send failures`
@@ -49,17 +49,17 @@ MVP is not "all email features". MVP is:
   - `workers/routes/reply-forward.ts`
   - `workers/email-sender.ts`
   - `workers/lib/attachments.ts`
-- Keep VSBG overlay:
+- Keep ONYX overlay:
   - `workers/app.ts`: Cloudflare Access JWT extraction/validation.
   - `workers/lib/access.ts`: member-to-mailbox authorization only.
   - `workers/lib/mailbox.ts`: mailbox guard using `ACCESS_EMAIL_ADDRESSES`.
-  - `wrangler.jsonc`: `admin@vsbg.vn`, `ceo@bdsmetro.com`, custom domain.
+  - `wrangler.jsonc`: `admin@onyx.com.vn`, `ceo@bdsmetro.com`, custom domain.
   - `app/routes/email-list.tsx`, `app/components/Sidebar.tsx`: social feed UI.
 - Add support files:
   - `tests/access.test.ts`
   - `tests/attachments.test.ts`
   - `tests/upstream-contract.test.ts`
-  - `docs/superpowers/plans/2026-06-02-vsbg-box-upstream-bigupdate.md`
+  - `docs/superpowers/plans/2026-06-02-onyx-email-upstream-bigupdate.md`
 
 ---
 
@@ -143,7 +143,7 @@ import { rewriteInlineImages } from "../app/lib/utils.ts";
 
 test("rewriteInlineImages maps cid references to attachment API URLs", () => {
 	const html = '<p>Hello</p><img src="cid:image001@abc">';
-	const result = rewriteInlineImages(html, "admin@vsbg.vn", "email-1", [
+	const result = rewriteInlineImages(html, "admin@onyx.com.vn", "email-1", [
 		{
 			id: "att-1",
 			content_id: "image001@abc",
@@ -153,13 +153,13 @@ test("rewriteInlineImages maps cid references to attachment API URLs", () => {
 
 	assert.match(
 		result,
-		/src="\/api\/v1\/mailboxes\/admin@vsbg.vn\/emails\/email-1\/attachments\/att-1"/,
+		/src="\/api\/v1\/mailboxes\/admin@onyx.com.vn\/emails\/email-1\/attachments\/att-1"/,
 	);
 });
 
 test("rewriteInlineImages handles angle bracket content ids", () => {
 	const html = '<img src="cid:image002@abc">';
-	const result = rewriteInlineImages(html, "admin@vsbg.vn", "email-2", [
+	const result = rewriteInlineImages(html, "admin@onyx.com.vn", "email-2", [
 		{
 			id: "att-2",
 			content_id: "<image002@abc>",
@@ -172,7 +172,7 @@ test("rewriteInlineImages handles angle bracket content ids", () => {
 
 test("rewriteInlineImages does not rewrite normal attachments", () => {
 	const html = '<img src="cid:file@abc">';
-	const result = rewriteInlineImages(html, "admin@vsbg.vn", "email-3", [
+	const result = rewriteInlineImages(html, "admin@onyx.com.vn", "email-3", [
 		{
 			id: "att-3",
 			content_id: "file@abc",
@@ -258,7 +258,7 @@ Current Version ID: <new-id>
 Open:
 
 ```txt
-https://box.vsbg.vn/api/v1/mailboxes/admin@vsbg.vn/emails/<email-id>/debug
+https://box.onyx.com.vn/api/v1/mailboxes/admin@onyx.com.vn/emails/<email-id>/debug
 ```
 
 Expected data needed:
@@ -343,12 +343,12 @@ Add a new function instead of changing upstream helper:
 export function shouldUseSameOriginEmailIframe() {
 	return Boolean(
 		typeof window !== "undefined" &&
-		window.location.hostname === "box.vsbg.vn",
+		window.location.hostname === "box.onyx.com.vn",
 	);
 }
 ```
 
-Then gate `allow-same-origin` only for VSBG Access deployment.
+Then gate `allow-same-origin` only for ONYX Access deployment.
 
 ---
 
@@ -365,8 +365,8 @@ Then gate `allow-same-origin` only for VSBG Access deployment.
 Current evidence:
 
 ```txt
-wrangler email sending settings vsbg.vn -> 404 Not Found
-wrangler email sending enable vsbg.vn -> 404 Not Found
+wrangler email sending settings onyx.com.vn -> 404 Not Found
+wrangler email sending enable onyx.com.vn -> 404 Not Found
 ```
 
 MVP rule:
@@ -405,8 +405,8 @@ Decision:
 
 ```txt
 Option A: Cloudflare Email Sending if product endpoint becomes available.
-Option B: Lark SMTP/API if VSBG wants normal mailbox sending.
-Option C: Resend for fastest transactional outbound from admin@vsbg.vn.
+Option B: Lark SMTP/API if ONYX wants normal mailbox sending.
+Option C: Resend for fastest transactional outbound from admin@onyx.com.vn.
 ```
 
 MVP recommendation:
@@ -417,7 +417,7 @@ Use Resend or Lark SMTP for outbound. Keep Cloudflare Email Routing for inbound.
 
 ---
 
-### Task 6: Preserve VSBG Access Overlay
+### Task 6: Preserve ONYX Access Overlay
 
 **Files:**
 - Keep: `workers/app.ts`
@@ -431,7 +431,7 @@ Use Resend or Lark SMTP for outbound. Keep Cloudflare Email Routing for inbound.
 Required env:
 
 ```json
-"EMAIL_ADDRESSES": ["admin@vsbg.vn"],
+"EMAIL_ADDRESSES": ["admin@onyx.com.vn"],
 "ACCESS_EMAIL_ADDRESSES": ["ceo@bdsmetro.com"],
 "POLICY_AUD": "155dc63d8967ec822618e99d56f62ead2154bde1eceb5f6bd1dbd9857b46e5af",
 "TEAM_DOMAIN": "steep-bush-3ccd.cloudflareaccess.com"
@@ -476,8 +476,8 @@ filterMailboxIdsForAccess exposes shared mailboxes to configured members
 Run:
 
 ```powershell
-npx.cmd wrangler email routing settings vsbg.vn
-npx.cmd wrangler email routing rules list vsbg.vn
+npx.cmd wrangler email routing settings onyx.com.vn
+npx.cmd wrangler email routing rules list onyx.com.vn
 ```
 
 Expected:
@@ -485,8 +485,8 @@ Expected:
 ```txt
 Enabled: true
 Status: ready
-Matchers: to:admin@vsbg.vn
-Actions: worker:vsbg-box
+Matchers: to:admin@onyx.com.vn
+Actions: worker:onyx-email
 Catch-all rule: disabled, action: drop
 ```
 
@@ -495,8 +495,8 @@ Catch-all rule: disabled, action: drop
 Use Cloudflare API with Global API Key or dashboard:
 
 ```txt
-App: vsbg-box
-Domain: box.vsbg.vn
+App: onyx-email
+Domain: box.onyx.com.vn
 Policy include: ceo@bdsmetro.com
 Identity provider: One-time PIN
 Managed OAuth: off
@@ -507,7 +507,7 @@ Managed OAuth: off
 Run:
 
 ```powershell
-npx.cmd wrangler r2 object get vsbg-box/mailboxes/admin@vsbg.vn.json --file - --remote
+npx.cmd wrangler r2 object get onyx-email/mailboxes/admin@onyx.com.vn.json --file - --remote
 ```
 
 Expected:
@@ -528,13 +528,13 @@ Expected:
 Open:
 
 ```txt
-https://box.vsbg.vn
+https://box.onyx.com.vn
 ```
 
 Expected:
 
 ```txt
-Cloudflare Access OTP -> ceo@bdsmetro.com -> app loads mailbox admin@vsbg.vn
+Cloudflare Access OTP -> ceo@bdsmetro.com -> app loads mailbox admin@onyx.com.vn
 ```
 
 - [ ] **Step 2: Inbound text**
@@ -542,9 +542,9 @@ Cloudflare Access OTP -> ceo@bdsmetro.com -> app loads mailbox admin@vsbg.vn
 Send external email:
 
 ```txt
-To: admin@vsbg.vn
+To: admin@onyx.com.vn
 Subject: MVP inbound text
-Body: Xin chào
+Body: Xin ch?o
 ```
 
 Expected:
@@ -559,7 +559,7 @@ Body renders.
 Send external email:
 
 ```txt
-To: admin@vsbg.vn
+To: admin@onyx.com.vn
 Subject: MVP inbound image
 Body: one inline image
 ```
@@ -583,7 +583,7 @@ No fake Sent row.
 If provider enabled:
 
 ```txt
-External inbox receives reply from admin@vsbg.vn.
+External inbox receives reply from admin@onyx.com.vn.
 Sent row exists.
 ```
 
@@ -596,14 +596,14 @@ Sent row exists.
 - `npm.cmd run build` passes.
 - `npm.cmd run deploy` succeeds.
 - Login works via `ceo@bdsmetro.com`.
-- `admin@vsbg.vn` inbound feed works.
+- `admin@onyx.com.vn` inbound feed works.
 - Inline image behavior is validated against actual email debug JSON.
 - Outbound state is honest: either sent and received, or visibly disabled.
 - No `Metro Mail.pdf` or API key committed.
 
 ## Risks
 
-- Cloudflare Email Sending API currently returns 404 for `vsbg.vn`; outbound may need non-Cloudflare provider.
+- Cloudflare Email Sending API currently returns 404 for `onyx.com.vn`; outbound may need non-Cloudflare provider.
 - Adding `allow-same-origin` to iframe weakens upstream isolation; use only if debug proves Access cookie blocking and document tradeoff.
 - Global API Key was pasted in chat; rotate after MVP verification.
 - Upstream may change; fetch before execution.
@@ -616,7 +616,7 @@ Sent row exists.
 
 ## Execution Handoff
 
-Plan complete and saved to `docs/superpowers/plans/2026-06-02-vsbg-box-upstream-bigupdate.md`.
+Plan complete and saved to `docs/superpowers/plans/2026-06-02-onyx-email-upstream-bigupdate.md`.
 
 Two execution options:
 

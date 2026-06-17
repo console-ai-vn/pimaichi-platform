@@ -1,4 +1,4 @@
-# VSBG Box ship blockers + Cloudflare config
+# ONYX ship blockers + Cloudflare config
 
 ## Findings
 - `git status --short` shows dirty working tree:
@@ -7,14 +7,14 @@
   - `?? Metro Mail.pdf`
   - `?? docs/superpowers/`
 - `wrangler.jsonc` current config:
-  - worker name: `vsbg-box`
-  - route/custom domain: `box.vsbg.vn`
+  - worker name: `onyx-email`
+  - route/custom domain: `box.onyx.com.vn`
   - `compatibility_date`: `2025-11-28`
   - `compatibility_flags`: `nodejs_compat`
   - bindings: `EMAIL` send_email, `BUCKET` R2, `AI`, `MAILBOX`, `EMAIL_AGENT`, `EMAIL_MCP`
   - vars:
-    - `DOMAINS=vsbg.vn`
-    - `EMAIL_ADDRESSES=["admin@vsbg.vn"]`
+    - `DOMAINS=onyx.com.vn`
+    - `EMAIL_ADDRESSES=["admin@onyx.com.vn"]`
     - `ACCESS_EMAIL_ADDRESSES=["ceo@bdsmetro.com"]`
     - `POLICY_AUD=155dc63d8967ec822618e99d56f62ead2154bde1eceb5f6bd1dbd9857b46e5af`
     - `TEAM_DOMAIN=steep-bush-3ccd.cloudflareaccess.com`
@@ -50,6 +50,6 @@
 - `wrangler whoami`
 
 ## Unresolved questions
-- Is `box.vsbg.vn` the only intended public hostname, or should `DOMAINS` include more domains?
+- Is `box.onyx.com.vn` the only intended public hostname, or should `DOMAINS` include more domains?
 - Does the live Access app still use issuer `https://steep-bush-3ccd.cloudflareaccess.com` and audience `155dc63d8967ec822618e99d56f62ead2154bde1eceb5f6bd1dbd9857b46e5af` exactly?
 - Should CID rewriting stay limited to inline attachments only, or is the broader rewrite intentional?

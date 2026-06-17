@@ -51,7 +51,7 @@ Two paths:
 
 1. Add safe inbound diagnostics that logs attachment count, mimetype, contentId, disposition, and skipped reason. No raw body.
 2. Deploy diagnostics only long enough to test.
-3. Send 3 control emails to `admin@vsbg.vn`:
+3. Send 3 control emails to `admin@onyx.com.vn`:
    - Gmail inline image pasted into body.
    - Gmail image as file attachment.
    - Apple/iCloud image attachment if available.
@@ -81,7 +81,7 @@ Two paths:
 
 ## Success Criteria
 
-- Normal email images with actual MIME bytes render in VSBG Box.
+- Normal email images with actual MIME bytes render in ONYX.
 - Private external images show a clear missing-payload state.
 - No raw debug endpoint remains live.
 - Tests/typecheck/build pass.

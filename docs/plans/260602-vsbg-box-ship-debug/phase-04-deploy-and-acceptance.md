@@ -22,7 +22,7 @@
 
 - No dirty app code except intentional commits.
 - No secret/key/PDF committed.
-- Live `box.vsbg.vn` passes manual flow.
+- Live `box.onyx.com.vn` passes manual flow.
 
 ## Architecture
 
@@ -53,18 +53,18 @@
    ```
 3. Verify Cloudflare:
    ```powershell
-   npx.cmd wrangler email routing rules list vsbg.vn
-   Invoke-WebRequest https://box.vsbg.vn/.well-known/cloudflare-access-protected-resource/
+   npx.cmd wrangler email routing rules list onyx.com.vn
+   Invoke-WebRequest https://box.onyx.com.vn/.well-known/cloudflare-access-protected-resource/
    ```
 4. Browser acceptance:
    - login with `ceo@bdsmetro.com`
-   - inbound text mail to `admin@vsbg.vn`
-   - inbound image mail to `admin@vsbg.vn`
+   - inbound text mail to `admin@onyx.com.vn`
+   - inbound image mail to `admin@onyx.com.vn`
    - outbound disabled or delivered
 5. Commit:
    ```powershell
    git add <intentional files>
-   git -c commit.gpgsign=false commit -m "fix: Stabilize VSBG Box mail MVP"
+   git -c commit.gpgsign=false commit -m "fix: Stabilize ONYX mail MVP"
    ```
 
 ## Todo list

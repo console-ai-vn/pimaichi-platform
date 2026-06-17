@@ -12,27 +12,27 @@
 - Hid deferred forward, mailbox-delete, and AI-settings surfaces behind V1 feature gates.
 - Limited inbound stored attachments to allowed images while preserving the received email.
 - Redirected a signed-in user directly into their single provisioned mailbox.
-- Updated visible product title and Cloudflare resource names to `VSBG Box` / `vsbg-box`.
+- Updated visible product title and Cloudflare resource names to `ONYX` / `onyx-email`.
 
 ## Verification
 - `npm test`: `14/14` pass.
 - `npm run typecheck`: pass.
 - `npm run build`: pass.
 - Local API smoke: `GET /api/v1/config` returns `200`.
-- Cloudflare R2 bucket created: `vsbg-box`.
-- Cloudflare Worker deployed: `https://vsbg-box.ceo-23f.workers.dev`.
+- Cloudflare R2 bucket created: `onyx-email`.
+- Cloudflare Worker deployed: `https://onyx-email.ceo-23f.workers.dev`.
 - Deployed Worker version: `8ac6ebba-1888-479f-af93-103865613ba2`.
 - Live browser UI renders inbox, compose image controls, Sent message, and image attachment card.
 - Live private attachment download returns `200 image/png`.
-- Custom domain deployed: `https://box.vsbg.vn`.
+- Custom domain deployed: `https://box.onyx.com.vn`.
 - Social-style team feed UI deployed.
-- Internal allowlist configured for `marketing@vsbg.vn`, `sale@vsbg.vn`, and `admin@vsbg.vn`.
+- Internal allowlist configured for `marketing@onyx.com.vn`, `sale@onyx.com.vn`, and `admin@onyx.com.vn`.
 - Controlled dependency upgrades completed; `npm audit` reports `0 vulnerabilities`.
 
 ## Blockers Before Deploy
-- Need allowed mailbox address on `vsbg.vn`.
+- Need allowed mailbox address on `onyx.com.vn`.
 - Need Cloudflare Access self-hosted app for the Worker hostname, then `TEAM_DOMAIN` and `POLICY_AUD`.
-- Need Email Routing rule for `vsbg.vn` pointing the chosen address to Worker `vsbg-box`.
+- Need Email Routing rule for `onyx.com.vn` pointing the chosen address to Worker `onyx-email`.
 - Cloudflare Vite SSR local runner fails with `bad allocation` while loading the Kumo bundle; use deployed preview for browser verification.
 - Codex in-app browser blocks localhost with `net::ERR_BLOCKED_BY_CLIENT`.
 
@@ -40,7 +40,7 @@
 - `DEMO_MODE=true` temporarily bypasses Cloudflare Access and exposes the single configured mailbox publicly.
 - Rotate the leaked Cloudflare credential.
 - Before non-demo use: create Access OTP app, set `TEAM_DOMAIN` and `POLICY_AUD`, then remove `DEMO_MODE`.
-- Before inbound mail verification: create the `marketing@vsbg.vn` Email Routing rule pointing to Worker `vsbg-box`.
+- Before inbound mail verification: create the `marketing@onyx.com.vn` Email Routing rule pointing to Worker `onyx-email`.
 
 ## Follow-up
 - Run visual compose-image verification on deployed preview.

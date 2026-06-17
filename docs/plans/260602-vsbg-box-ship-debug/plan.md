@@ -1,25 +1,25 @@
 ---
-title: "VSBG Box Ship Debug"
-description: "Plan debug toan bo de dua MVP VSBG Box ve trang thai ship duoc dua tren upstream."
+title: "ONYX Ship Debug"
+description: "Plan debug toan bo de dua MVP ONYX ve trang thai ship duoc dua tren upstream."
 status: completed
 priority: P2
 effort: 5h
 branch: metro-mail-v1
-tags: [vsbg-box, debug, upstream, mvp, cloudflare]
+tags: [onyx-email, debug, upstream, mvp, cloudflare]
 created: 2026-06-02
 completed: 2026-06-08
 ---
 
-# VSBG Box Ship Debug Plan
+# ONYX Ship Debug Plan
 
 ## Objective
 
-Ship MVP on dinh, khong fix le te: upstream mail core lam chuan, VSBG chi overlay Access, mailbox `admin@vsbg.vn`, UI feed, va outbound ro trang thai.
+Ship MVP on dinh, khong fix le te: upstream mail core lam chuan, ONYX chi overlay Access, mailbox `admin@onyx.com.vn`, UI feed, va outbound ro trang thai.
 
 ## MVP Definition
 
 - Login OTP bang `ceo@bdsmetro.com`.
-- App mo shared mailbox `admin@vsbg.vn`.
+- App mo shared mailbox `admin@onyx.com.vn`.
 - Inbound mail vao Feed.
 - Inline/attached image hien thi hoac co fallback attachment card dung duoc.
 - Reply/compose khong bao sent ao.

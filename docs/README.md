@@ -1,6 +1,6 @@
-# VSBG Box Docs
+# ONYX Docs
 
-> **VSBG Box** — self-hosted email client on Cloudflare Workers, with an AI agent and MCP server. Operated by VSBG on `vsbg.vn`.
+> **ONYX** ? self-hosted email client on Cloudflare Workers, with an AI agent and MCP server. Operated by ONYX on `onyx.com.vn`.
 
 ## Index
 
@@ -18,17 +18,17 @@
 
 ## Reading order for a new dev
 
-1. **Root [`README.md`](../README.md)** — what the product is, how to run it locally.
-2. **`codebase-summary.md`** — what tech, what files, where things live.
-3. **`system-architecture.md`** — how it fits together, where the data goes.
-4. **`code-standards.md`** — how to write code that matches.
-5. **`design-guidelines.md`** — how to write UI that matches.
-6. **`deployment-guide.md`** — when you need to ship.
-7. **`project-overview-pdr.md`** + **`project-roadmap.md`** — what to build next.
+1. **Root [`README.md`](../README.md)** ? what the product is, how to run it locally.
+2. **`codebase-summary.md`** ? what tech, what files, where things live.
+3. **`system-architecture.md`** ? how it fits together, where the data goes.
+4. **`code-standards.md`** ? how to write code that matches.
+5. **`design-guidelines.md`** ? how to write UI that matches.
+6. **`deployment-guide.md`** ? when you need to ship.
+7. **`project-overview-pdr.md`** + **`project-roadmap.md`** ? what to build next.
 
 ## Conventions used across all docs
 
 - File/line references use `path:line` (e.g. `workers/durableObject/index.ts:1100`).
 - Cloudflare primitives written in **bold** on first use: **Durable Object**, **Workers AI**, **R2**, **Email Routing**, **Email Service**.
-- Feature scope is **V1.5** (formerly "V2-deferred"): social graph, conversation state, internal notes, internal-only delivery are all shipped — not backlog.
-- "SHIPPED" / "V1.5" / "V2" / "V3" refer to the rows in [`project-roadmap.md`](./project-roadmap.md) § Current state.
+- Feature scope is **V1.5** (formerly "V2-deferred"): social graph, conversation state, internal notes, internal-only delivery are all shipped ? not backlog.
+- "SHIPPED" / "V1.5" / "V2" / "V3" / "Phase 02" / "Phase 05" refer to the rows in [`project-roadmap.md`](./project-roadmap.md) ? Current state.

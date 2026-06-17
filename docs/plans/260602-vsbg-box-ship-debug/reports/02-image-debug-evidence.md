@@ -4,7 +4,7 @@ Date: 2026-06-02
 
 ## Observed Email
 
-- Mailbox: `admin@vsbg.vn`
+- Mailbox: `admin@onyx.com.vn`
 - Email id: `59252814-353e-47dd-bc1a-643984ab8efc`
 - Subject: `Re: test anh`
 - Sender: `mr.d@onyx.com.vn`
@@ -21,7 +21,7 @@ Date: 2026-06-02
 
 ## Root Cause
 
-Lark sent HTML with CID image references but did not include the corresponding image parts in the email payload received by Cloudflare Email Routing. Because no attachment bytes reached the Worker, VSBG Box cannot reconstruct the real image from R2.
+Lark sent HTML with CID image references but did not include the corresponding image parts in the email payload received by Cloudflare Email Routing. Because no attachment bytes reached the Worker, ONYX cannot reconstruct the real image from R2.
 
 ## Fix Shipped
 

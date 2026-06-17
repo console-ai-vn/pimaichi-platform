@@ -1,6 +1,6 @@
 ---
 title: "Email Social Network Plan"
-description: "Turn VSBG Box from an email client into a private social network where email is identity, transport, and relationship graph."
+description: "Turn ONYX from an email client into a private social network where email is identity, transport, and relationship graph."
 status: completed
 priority: P1
 effort: 10d
@@ -20,7 +20,7 @@ Build "social network inside email" with mobile as the primary surface: every ma
 
 ## Product Thesis
 
-Email already has identity, inbox, graph, async messaging, attachments, and universal reach. VSBG Box should not become another Gmail clone. It should become a private relationship network where external people keep using normal email, while the internal team sees profiles, relationship history, notes, assignments, and AI context.
+Email already has identity, inbox, graph, async messaging, attachments, and universal reach. ONYX should not become another Gmail clone. It should become a private relationship network where external people keep using normal email, while the internal team sees profiles, relationship history, notes, assignments, and AI context.
 
 ## Success Criteria
 
@@ -98,11 +98,11 @@ Use `/plan:hard` because this touches data model, UI, agent tools, MCP, security
 Enhanced prompt used:
 
 ```text
-Plan how to evolve VSBG Box into a private social network inside email with mobile as the primary UX. Preserve existing Cloudflare Workers + Durable Objects + R2 + React Router architecture. Do not implement. Design a phased plan where email identities become contact/profile nodes, email threads become social conversations, and the internal team can add notes, assignments, seen/reply status, tags, and AI-readable context without leaking internal metadata to external email recipients. The UI must work first as a mobile 3-screen flow: Inbox, Conversation, Context. Include safety gates for AI/MCP actions, responsive tests, and ship verification.
+Plan how to evolve ONYX into a private social network inside email with mobile as the primary UX. Preserve existing Cloudflare Workers + Durable Objects + R2 + React Router architecture. Do not implement. Design a phased plan where email identities become contact/profile nodes, email threads become social conversations, and the internal team can add notes, assignments, seen/reply status, tags, and AI-readable context without leaking internal metadata to external email recipients. The UI must work first as a mobile 3-screen flow: Inbox, Conversation, Context. Include safety gates for AI/MCP actions, responsive tests, and ship verification.
 ```
 
 ## Unresolved Questions
 
-- Is first user group only `admin@vsbg.vn` + privileged owner, or should this immediately support multiple teammates?
+- Is first user group only `admin@onyx.com.vn` + privileged owner, or should this immediately support multiple teammates?
 - Should "social graph" stay private CRM-style, or later expose a portal for external contacts?
 - Which status taxonomy is default: `open / waiting / closed`, or sales-oriented `lead / nurturing / won / lost`?

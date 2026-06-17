@@ -1,28 +1,28 @@
 ---
-title: "V2 â€” Audit + Retention + Hardening"
-description: "Observability, compliance, security hardening, and CI for production-grade VSBG Box."
+title: "V2 — Audit + Retention + Hardening"
+description: "Observability, compliance, security hardening, and CI for production-grade ONYX."
 status: approved
 priority: P1
 effort: 12d
 branch: metro-mail-v1
-tags: [vsbg-box, audit, retention, security, ci, cloudflare]
+tags: [onyx-email, audit, retention, security, ci, cloudflare]
 created: 2026-06-08
 ---
 
-# V2 â€” Audit + Retention + Hardening
+# V2 — Audit + Retention + Hardening
 
-> **Context:** V1 + V1.5 shipped. Core email + AI agent + MCP + social layer all running on `box.vsbg.vn`. V2 hardens the foundation for production team use.
+> **Context:** V1 + V1.5 shipped. Core email + AI agent + MCP + social layer all running on `box.onyx.com.vn`. V2 hardens the foundation for production team use.
 
 ## Objective
 
-Turn VSBG Box from a working MVP into a production-grade internal tool: audit trail, data retention, proper secrets management, per-mailbox permissions, CI pipeline, and security hardening.
+Turn ONYX from a working MVP into a production-grade internal tool: audit trail, data retention, proper secrets management, per-mailbox permissions, CI pipeline, and security hardening.
 
 ## Success Criteria
 
 - Every read/send/delete/login action produces an immutable audit log entry.
 - Trash auto-archives after 30 days; Sent auto-archives after 1 year.
 - POLICY_AUD and TEAM_DOMAIN are wrangler secrets, not in `wrangler.jsonc` `vars`.
-- CI runs on every push: typecheck â†’ test â†’ lint â†’ build.
+- CI runs on every push: typecheck ? test ? lint ? build.
 - Full mailbox deletion cleans up DO data + R2 attachments without leaks.
 - App-level CSP header is set on all non-iframe responses.
 - Per-mailbox permission model defined (read/send/delete/manage/admin roles).
@@ -45,7 +45,7 @@ Turn VSBG Box from a working MVP into a production-grade internal tool: audit tr
 - D1 / KV migration. Keep DO SQLite + R2.
 - Multi-region replication.
 - Public-internet email (still internal-only by design).
-- CRM layer â€” separate product line.
+- CRM layer — separate product line.
 - Replace Cloudflare Access with custom auth.
 
 ## Phases
@@ -70,7 +70,7 @@ pnpm deploy   # only after phase gates pass
 
 ## Reference
 
-- [project-roadmap.md](../../project-roadmap.md) Â§ 2 â€” V2 items
-- [system-architecture.md](../../system-architecture.md) Â§ 9 â€” known TODOs
-- [code-standards.md](../../code-standards.md) Â§ 9 â€” linting gap
-- [deployment-guide.md](../../deployment-guide.md) Â§ 3.5 â€” secrets setup
+- [project-roadmap.md](../../project-roadmap.md) § 2 — V2 items
+- [system-architecture.md](../../system-architecture.md) § 9 — known TODOs
+- [code-standards.md](../../code-standards.md) § 9 — linting gap
+- [deployment-guide.md](../../deployment-guide.md) § 3.5 — secrets setup
