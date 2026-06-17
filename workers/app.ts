@@ -9,6 +9,8 @@ import { createRequestHandler } from "react-router";
 import { app as apiApp, receiveEmail } from "./index";
 import { app as mediaApp } from "./routes/media";
 import { app as liveApp } from "./routes/live";
+import { app as gateApp } from "./routes/gate";
+import { app as creatorApp } from "./routes/creator";
 import { z } from "zod";
 import { applySecurityHeaders, applyCspHeaders } from "./lib/security-headers";
 import { generateRefreshToken, verifyRefreshToken, generateAccessToken } from "./lib/token-refresh";
@@ -89,6 +91,7 @@ function isPublicRequest(req: Request) {
 	if (url.pathname === "/" || url.pathname === "/signup") return true;
 	if (PUBLIC_ASSET_PATHS.has(url.pathname)) return true;
 	if (url.pathname.startsWith("/assets/")) return true;
+	if (url.pathname.startsWith("/api/v1/creator/")) return true;
 	return (
 		url.pathname === "/api/public/signup-requests" && req.method === "POST"
 	);
@@ -181,6 +184,12 @@ app.route("/", mediaApp);
 
 // Mount live streaming routes (WebSocket + Stream Live)
 app.route("/", liveApp);
+
+// Mount content gate routes (PPV, signed URLs)
+app.route("/", gateApp);
+
+// Phase 08: Public creator profile routes (no auth required)
+app.route("/", creatorApp);
 
 // Agent WebSocket routing - must be before React Router catch-all
 app.all("/agents/*", async (c) => {

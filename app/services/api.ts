@@ -561,6 +561,28 @@ const api = {
 		get<{ history: Array<Record<string, unknown>> }>(
 			`/api/v1/inventory/history/${encodeURIComponent(userEmail)}`,
 		),
+
+	// Gate
+	checkGate: (mailboxId: string, emailId: string) =>
+		get<{
+			allowed: boolean
+			tier: string
+			reason?: string
+			keyPrice?: number
+			requiresSubscription: boolean
+			alreadyUnlocked: boolean
+		}>(`/api/v1/gate/check/${encodeURIComponent(mailboxId)}/${encodeURIComponent(emailId)}`),
+	unlockGate: (mailboxId: string, emailId: string, itemId: string) =>
+		post<{ success: boolean; error?: string }>(
+			`/api/v1/gate/unlock/${encodeURIComponent(mailboxId)}/${encodeURIComponent(emailId)}`,
+			{ itemId },
+		),
+	getGateStatus: (mailboxId: string, emailId: string) =>
+		get<{
+			alreadyUnlocked: boolean
+			tier: string
+			keyPrice?: number
+		}>(`/api/v1/gate/status/${encodeURIComponent(mailboxId)}/${encodeURIComponent(emailId)}`),
 };
 
 export default api;

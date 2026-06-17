@@ -63,4 +63,10 @@ export const queryKeys = {
 		userItems: (userEmail: string) => ["inventory", "items", userEmail] as const,
 		history: (userEmail: string) => ["inventory", "history", userEmail] as const,
 	},
+	gate: {
+		check: (mailboxId: string, emailId: string) =>
+			["gate", "check", mailboxId, emailId] as const,
+		status: (mailboxId: string, emailId: string) =>
+			["gate", "status", mailboxId, emailId] as const,
+	},
 };
