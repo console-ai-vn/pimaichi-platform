@@ -1,16 +1,14 @@
-import { Button, Loader, Tabs } from "@cloudflare/kumo"
 import { useCallback, useState } from "react"
 import { useNavigate, useParams } from "react-router"
+import CreatorHeader from "~/components/CreatorHeader"
 import ContentGrid from "~/components/ContentGrid"
-import CreatorHero from "~/components/CreatorHero"
-import ItemCard from "~/components/ItemCard"
 import { SkeletonHero, SkeletonGrid } from "~/components/SkeletonLoader"
 import {
-	useCreatorContent,
 	useCreatorProfile,
+	useCreatorContent,
 	useCreatorShop,
 } from "~/queries/creator"
-import type { ContentGridItem } from "~/components/ContentGrid"
+import type { ContentGridItem, ShopGridItem } from "~/components/ContentGrid"
 import type { ContentTier } from "~/components/ContentTierBadge"
 
 export function meta({
@@ -74,9 +72,19 @@ export default function CreatorRoute() {
 		[],
 	)
 
-	const handleUnlockItem = useCallback(async (item: ContentGridItem) => {
-		navigate(`/checkout?itemId=${encodeURIComponent(item.id)}`)
-	}, [navigate])
+	const handleUnlockItem = useCallback(
+		async (item: ContentGridItem) => {
+			navigate(`/checkout?itemId=${encodeURIComponent(item.id)}`)
+		},
+		[navigate],
+	)
+
+	const handleShopPurchase = useCallback(
+		(item: ShopGridItem) => {
+			navigate(`/checkout?itemId=${encodeURIComponent(item.id)}`)
+		},
+		[navigate],
+	)
 
 	// Loading state
 	if (profile.isLoading) {
@@ -84,7 +92,7 @@ export default function CreatorRoute() {
 			<div className="min-h-screen bg-kumo-recessed">
 				<SkeletonHero />
 				<div className="mx-auto max-w-5xl px-4 py-8">
-					<div className="mb-6 h-10 w-40 rounded bg-kumo-fill animate-pulse" />
+					<div className="mb-6 h-10 w-40 animate-pulse rounded bg-kumo-fill" />
 					<SkeletonGrid count={8} cols={4} />
 				</div>
 			</div>
@@ -95,20 +103,20 @@ export default function CreatorRoute() {
 	if (profile.isError || !creator) {
 		return (
 			<div className="flex min-h-screen items-center justify-center bg-kumo-recessed p-8">
-				<div className="rounded-2xl border border-kumo-line bg-kumo-base p-8 text-center">
+				<div className="animate-fade-in rounded-2xl border border-kumo-line bg-kumo-base p-8 text-center">
 					<h1 className="text-xl font-bold text-kumo-default">
 						Creator Not Found
 					</h1>
 					<p className="mt-2 text-kumo-subtle">
 						This creator page doesn't exist or may have been removed.
 					</p>
-					<Button
-						variant="primary"
-						className="mt-6"
-						onClick={() => navigate("/")}
+					<button
+						type="button"
+						onClick={() => navigate("/app")}
+						className="mt-6 rounded-xl bg-kumo-brand px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-kumo-brand-dark"
 					>
 						Go Home
-					</Button>
+					</button>
 				</div>
 			</div>
 		)
@@ -125,118 +133,89 @@ export default function CreatorRoute() {
 			previewUrl: post.previewUrl,
 		})) ?? []
 
-	const shopItems = shop.data ?? []
+	const shopItems: ShopGridItem[] =
+		shop.data?.map((item) => ({
+			id: item.id,
+			type: item.type,
+			name: item.name,
+			description: item.description,
+			price: item.price,
+			imageUrl: item.imageUrl,
+		})) ?? []
+
+	// Extract handle from email address
+	const handle = creator.id.includes("@")
+		? creator.id.split("@")[0]
+		: creator.name.toLowerCase().replace(/\s+/g, "")
 
 	return (
 		<div className="min-h-screen bg-kumo-recessed">
-			{/* Creator Hero */}
-			<CreatorHero
+			{/* Sticky Creator Header */}
+			<CreatorHeader
 				creator={{
 					name: creator.name,
+					handle,
 					bio: creator.bio,
 					avatarUrl: creator.avatarUrl,
 					coverUrl: creator.coverUrl,
 					subscriberCount: creator.subscriberCount,
 					postCount: creator.postCount,
 					itemCount: creator.itemCount,
-					avatarVersion: creator.avatarVersion,
-					coverVersion: creator.coverVersion,
 				}}
+				isSubscribed={false}
 				onSubscribe={handleSubscribe}
 			/>
 
-			{/* Tabs */}
-			<div className="mx-auto max-w-5xl px-4 pt-6">
-				<Tabs
-					value={activeTab}
-					onValueChange={setActiveTab}
-					tabs={[
-						{ value: "posts", label: `Posts (${creator.postCount})` },
-						{ value: "shop", label: `Shop (${creator.itemCount})` },
-					]}
+			{/* Content area */}
+			<div className="mx-auto max-w-5xl px-4 py-4">
+				<ContentGrid
+					items={contentItems}
+					shopItems={shopItems}
+					activeTab={activeTab}
+					onTabChange={setActiveTab}
+					onItemClick={handleItemClick}
+					onUnlockItem={handleUnlockItem}
+					onShopPurchase={handleShopPurchase}
+					isLoading={content.isLoading}
 				/>
-			</div>
 
-			{/* Tab content */}
-			<div className="mx-auto max-w-5xl px-4 py-6">
-				{activeTab === "posts" && (
-					<>
-						{content.isLoading ? (
-							<SkeletonGrid count={8} cols={4} />
-						) : (
-							<ContentGrid
-								items={contentItems}
-								onItemClick={handleItemClick}
-								onUnlockItem={handleUnlockItem}
-							/>
-						)}
-
-						{/* Pagination */}
-						{content.data && content.data.totalCount > content.data.limit && (
-							<div className="mt-8 flex items-center justify-center gap-2">
-								<Button
-									variant="secondary"
-									size="sm"
-									disabled={contentPage <= 1}
-									onClick={() => setContentPage((p) => Math.max(1, p - 1))}
-								>
-									Previous
-								</Button>
-								<span className="text-sm text-kumo-subtle">
-									Page {contentPage} of{" "}
-									{Math.ceil(content.data.totalCount / content.data.limit)}
-								</span>
-								<Button
-									variant="secondary"
-									size="sm"
-									disabled={
-										contentPage >=
-										Math.ceil(content.data.totalCount / content.data.limit)
-									}
-									onClick={() => setContentPage((p) => p + 1)}
-								>
-									Next
-								</Button>
-							</div>
-						)}
-					</>
-				)}
-
-				{activeTab === "shop" && (
-					<>
-						{shop.isLoading ? (
-							<SkeletonGrid count={6} cols={3} />
-						) : shopItems.length === 0 ? (
-							<div className="flex flex-col items-center justify-center py-16 text-center">
-								<p className="text-kumo-subtle">No items in shop yet</p>
-								<p className="mt-1 text-sm text-kumo-inactive">
-									This creator hasn't added any items to their shop.
-								</p>
-							</div>
-						) : (
-							<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-								{shopItems.map((item) => (
-									<ItemCard
-										key={item.id}
-										item={{
-											id: item.id,
-											name: item.name,
-											description: item.description,
-											price: item.price,
-											imageUrl: item.imageUrl,
-											type: item.type,
-										}}
-										onPurchase={() => {
-											navigate(
-												`/checkout?itemId=${encodeURIComponent(item.id)}`,
-											)
-										}}
-									/>
-								))}
-							</div>
-						)}
-					</>
-				)}
+				{/* Pagination for posts */}
+				{activeTab === "posts" &&
+					content.data &&
+					content.data.totalCount > content.data.limit && (
+						<div className="mt-6 flex items-center justify-center gap-3">
+							<button
+								type="button"
+								disabled={contentPage <= 1}
+								onClick={() =>
+									setContentPage((p) => Math.max(1, p - 1))
+								}
+								className="rounded-lg border border-kumo-line bg-kumo-base px-3 py-1.5 text-sm text-kumo-subtle transition-colors hover:bg-kumo-fill disabled:opacity-40"
+							>
+								Previous
+							</button>
+							<span className="text-sm text-kumo-subtle">
+								Page {contentPage} of{" "}
+								{Math.ceil(
+									content.data.totalCount / content.data.limit,
+								)}
+							</span>
+							<button
+								type="button"
+								disabled={
+									contentPage >=
+									Math.ceil(
+										content.data.totalCount /
+											content.data.limit,
+									)
+								}
+								onClick={() => setContentPage((p) => p + 1)}
+								className="rounded-lg border border-kumo-line bg-kumo-base px-3 py-1.5 text-sm text-kumo-subtle transition-colors hover:bg-kumo-fill disabled:opacity-40"
+							>
+								Next
+							</button>
+						</div>
+					)}
 			</div>
 
 			{/* Structured data for SEO */}
@@ -248,7 +227,9 @@ export default function CreatorRoute() {
 						"@type": "Person",
 						name: creator.name,
 						description: creator.bio?.replace(/<[^>]*>/g, ""),
-						url: `https://start.onyx.com.vn/${encodeURIComponent(creator.id)}`,
+						url: `https://start.onyx.com.vn/${encodeURIComponent(
+							creator.id,
+						)}`,
 						image: creator.avatarUrl,
 					}),
 				}}
