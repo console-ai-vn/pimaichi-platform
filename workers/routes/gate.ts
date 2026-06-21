@@ -27,27 +27,13 @@ app.get("/api/v1/gate/check/:mailboxId/:emailId", async (c) => {
 	const emailId = decodeURIComponent(rawEmailId)
 	const userEmail = c.var.accessEmail || ""
 
-	// Try to load gate meta from R2 first, then fallback to DO
+	// Load gate meta from R2 only
 	let gateMeta: GateMetadata | null = null
 
-	// Check R2 for explicit gate metadata
 	const gateKey = `gates/${mailboxId}/${emailId}.json`
 	const gateObj = await c.env.BUCKET.get(gateKey)
 	if (gateObj) {
 		gateMeta = (await gateObj.json()) as GateMetadata
-	} else {
-		// Fallback: check mailbox DO for email-level gate meta
-		try {
-			const stub = c.env.MAILBOX.get(c.env.MAILBOX.idFromName(mailboxId))
-			const email = await (stub as any).getEmail(emailId)
-			if (email && email.gate_meta) {
-				gateMeta = typeof email.gate_meta === "string"
-					? JSON.parse(email.gate_meta) as GateMetadata
-					: email.gate_meta as GateMetadata
-			}
-		} catch {
-			// Email not found or not accessible
-		}
 	}
 
 	if (!gateMeta) {
@@ -121,24 +107,12 @@ app.get("/api/v1/gate/status/:mailboxId/:emailId", async (c) => {
 	const emailId = decodeURIComponent(rawEmailId)
 	const userEmail = c.var.accessEmail || ""
 
-	// Load gate meta
+	// Load gate meta from R2 only
 	let gateMeta: GateMetadata | null = null
 	const gateKey = `gates/${mailboxId}/${emailId}.json`
 	const gateObj = await c.env.BUCKET.get(gateKey)
 	if (gateObj) {
 		gateMeta = (await gateObj.json()) as GateMetadata
-	} else {
-		try {
-			const stub = c.env.MAILBOX.get(c.env.MAILBOX.idFromName(mailboxId))
-			const email = await (stub as any).getEmail(emailId)
-			if (email && email.gate_meta) {
-				gateMeta = typeof email.gate_meta === "string"
-					? JSON.parse(email.gate_meta) as GateMetadata
-					: email.gate_meta as GateMetadata
-			}
-		} catch {
-			// ignore
-		}
 	}
 
 	if (!gateMeta) {

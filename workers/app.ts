@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import { routeAgentRequest } from "agents";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 import { createRequestHandler } from "react-router";
-import { app as apiApp, receiveEmail } from "./index";
+import { app as apiApp } from "./index";
 import { app as mediaApp } from "./routes/media";
 import { app as liveApp } from "./routes/live";
 import { app as gateApp } from "./routes/gate";
@@ -19,7 +19,6 @@ import { applySecurityHeaders, applyCspHeaders } from "./lib/security-headers";
 import { generateRefreshToken, verifyRefreshToken, generateAccessToken } from "./lib/token-refresh";
 import { checkRateLimit } from "./lib/rate-limiter";
 import { scanImageForNsfw } from "./lib/nsfw-stub";
-import { EmailMCP } from "./mcp";
 import { getAccessEmail, normalizeEmail } from "./lib/access";
 import {
 	parseAgentMailboxId,
@@ -29,13 +28,10 @@ import {
 import { roleHasPermission } from "./lib/permissions";
 import type { AccessVariables, Env } from "./types";
 
-export { MailboxDO } from "./durableObject";
 export { OrgFeedDO } from "./durableObject/orgFeed";
 export { PaymentDO } from "./durableObject/payment";
 export { InventoryDO } from "./durableObject/inventory";
 export { LiveDO } from "./durableObject/live";
-export { EmailAgent } from "./agent";
-export { EmailMCP } from "./mcp";
 
 declare module "react-router" {
 	export interface AppLoadContext {
@@ -50,18 +46,6 @@ const requestHandler = createRequestHandler(
 	() => import("virtual:react-router/server-build"),
 	import.meta.env.MODE,
 );
-const mcpHandler = EmailMCP.serve("/mcp", {
-	binding: "EMAIL_MCP",
-	corsOptions: import.meta.env.DEV
-		? {
-				origin: "http://localhost:5173",
-				methods: "GET, POST, DELETE, OPTIONS",
-			}
-		: {
-				origin: "https://box.onyx.com.vn",
-				methods: "GET, POST, DELETE, OPTIONS",
-			},
-});
 
 function getAccessUrls(teamDomain: string) {
 	const certsPath = "/cdn-cgi/access/certs";
@@ -157,25 +141,6 @@ app.use("*", async (c, next) => {
 	c.res = applySecurityHeaders(c.res);
 	c.res = applyCspHeaders(c.res);
 });
-
-function forwardMcpRequest(c: {
-	req: { raw: Request };
-	var: AccessVariables;
-	env: Env;
-	executionCtx: { waitUntil: (promise: Promise<unknown>) => void };
-}) {
-	const accessEmail = c.var.accessEmail;
-	const request = withToolAccessEmail(c.req.raw, accessEmail);
-	const ctx = Object.assign(c.executionCtx, {
-		props: { accessEmail },
-	});
-	return mcpHandler.fetch(request, c.env, ctx as ExecutionContext);
-}
-
-// MCP server endpoint — used by AI coding tools (ProtoAgent, Claude Code, Cursor, etc.)
-// Must be before API routes and React Router catch-all
-app.all("/mcp", (c) => forwardMcpRequest(c));
-app.all("/mcp/*", (c) => forwardMcpRequest(c));
 
 // Mount the API routes
 app.route("/", apiApp);
@@ -288,25 +253,7 @@ app.all("*", (c) => {
 	});
 });
 
-// Export the Hono app as the default export with an email handler
+// Export the Hono app as the default export
 export default {
 	fetch: app.fetch,
-	async email(
-		event: { raw: ReadableStream; rawSize: number },
-		env: Env,
-		ctx: ExecutionContext,
-	) {
-		try {
-			await receiveEmail(event, env, ctx);
-		} catch (e) {
-			console.error(
-				"Failed to process incoming email:",
-				(e as Error).message,
-				(e as Error).stack,
-			);
-			// Re-throw so Cloudflare's email routing can retry delivery or bounce the message.
-			// Swallowing the error would silently drop the email.
-			throw e;
-		}
-	},
 };

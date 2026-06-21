@@ -1,0 +1,19 @@
+Image Classification Summary
+========================================
+Date: 2026-06-20 14:59
+Model: gemini-2.5-flash-lite
+Total images: 0
+Errors: 0
+Processing time: 0s
+
+Distribution:
+  01-portrait-selfie                0 (  0.0%) 
+  02-food-drink                     0 (  0.0%) 
+  03-landscape-outdoor              0 (  0.0%) 
+  04-family-friends                 0 (  0.0%) 
+  05-object-still-life              0 (  0.0%) 
+  06-pet-animal                     0 (  0.0%) 
+  07-text-screenshot                0 (  0.0%) 
+  08-event-party                    0 (  0.0%) 
+  09-fashion-style                  0 (  0.0%) 
+  10-other                          0 (  0.0%) 
