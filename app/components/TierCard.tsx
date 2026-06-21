@@ -9,10 +9,10 @@ interface TierCardProps {
 	onSelect: () => void
 }
 
-function formatVnd(amount: number) {
-	return new Intl.NumberFormat("vi-VN", {
+function formatUsd(amount: number) {
+	return new Intl.NumberFormat("en-US", {
 		style: "currency",
-		currency: "VND",
+		currency: "USD",
 		maximumFractionDigits: 0,
 	}).format(amount)
 }
@@ -43,7 +43,7 @@ export default function TierCard({
 			</div>
 			<div className="mb-4">
 				<span className="text-3xl font-bold text-kumo-default">
-					{formatVnd(price)}
+					{formatUsd(price)}
 				</span>
 				<span className="text-sm text-kumo-subtle">/mo</span>
 			</div>

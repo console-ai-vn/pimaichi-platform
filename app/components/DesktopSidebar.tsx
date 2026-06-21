@@ -22,7 +22,7 @@ interface DesktopSidebarProps {
   /** Current user display info — passed down or fetched inside */
   user?: {
     name: string
-    email: string
+    username: string
     avatarUrl?: string
   }
 }
@@ -40,14 +40,14 @@ export default function DesktopSidebar({ badgeCount = 0, user }: DesktopSidebarP
       {/* Logo */}
       <div className="flex h-14 items-center border-b border-kumo-line px-4">
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-kumo-brand text-xs font-bold text-white">
-          O
+          P
         </div>
         <span
           className={`ml-3 overflow-hidden whitespace-nowrap text-sm font-semibold text-kumo-default transition-opacity duration-200 ${
             expanded ? "opacity-100" : "opacity-0"
           }`}
         >
-          ONYX
+          Pimaichi
         </span>
       </div>
 
@@ -107,7 +107,7 @@ export default function DesktopSidebar({ badgeCount = 0, user }: DesktopSidebarP
                 {user.name}
               </div>
               <div className="truncate text-xs text-kumo-subtle">
-                {user.email}
+                @{user.username}
               </div>
             </div>
           </div>

@@ -14,8 +14,8 @@ export interface ContentCardItem {
   tier: ContentTier
   isUnlocked: boolean
   creatorName?: string
-  mailboxId?: string
-  emailId?: string
+  creatorId?: string
+  contentId?: string
 }
 
 interface ContentCardProps {
@@ -49,19 +49,19 @@ export default function ContentCard({
 
   // Paywall logic
   const paywall = usePaywall(
-    item.mailboxId || "",
-    item.emailId || "",
+    item.creatorId || "",
+    item.contentId || "",
   )
 
   const handleShowPaywall = useCallback(() => {
-    if (isGated && item.mailboxId && item.emailId) {
+    if (isGated && item.creatorId && item.contentId) {
       paywall.checkGate()
       setShowPaywall(true)
     } else if (isGated) {
-      // No mailbox/email context — still show paywall as fallback
+      // No creator/content context — still show paywall as fallback
       setShowPaywall(true)
     }
-  }, [isGated, item.mailboxId, item.emailId, paywall])
+  }, [isGated, item.creatorId, item.contentId, paywall])
 
   const handleSubscribe = useCallback(() => {
     // Navigate to checkout/pricing
@@ -69,7 +69,7 @@ export default function ContentCard({
   }, [])
 
   const handleUnlock = useCallback(async () => {
-    if (item.emailId && item.mailboxId) {
+    if (item.contentId && item.creatorId) {
       const success = await paywall.unlock(item.id)
       if (success) {
         setShowPaywall(false)

@@ -3,25 +3,24 @@
 @import "tailwindcss";
 
 /* ============================================================
-   ONYX Theme — CSS Custom Properties
+   Pimaichi Theme — CSS Custom Properties
    ============================================================ */
 
 :root {
-	--onyx-brand: #4f7cff;
-	--onyx-brand-light: #6a90ff;
-	--onyx-brand-dark: #3a5fd9;
-	--onyx-accent: #1ed6a0;
-	--onyx-accent-light: #45e6b8;
-	--onyx-bg-dark: #0a1020;
-	--onyx-bg-mid: #111827;
-	--onyx-bg-card: #1a2332;
-	--onyx-text-primary: #f1f5f9;
-	--onyx-text-secondary: #94a3b8;
-	--onyx-text-muted: #64748b;
-	--onyx-border: rgba(255, 255, 255, 0.08);
-	--onyx-border-light: rgba(255, 255, 255, 0.15);
-	--onyx-glass-bg: rgba(255, 255, 255, 0.06);
-	--onyx-glass-border: rgba(255, 255, 255, 0.1);
+	--pimaichi-bg: #0d0d0d;
+	--pimaichi-bg-card: #1a1a2e;
+	--pimaichi-bg-elevated: #222240;
+	--pimaichi-accent: #8b5cf6;
+	--pimaichi-accent-hover: #a78bfa;
+	--pimaichi-text: #ffffff;
+	--pimaichi-text-secondary: #a0a0b0;
+	--pimaichi-text-muted: #6b6b80;
+	--pimaichi-border: rgba(255,255,255,0.06);
+	--pimaichi-border-light: rgba(255,255,255,0.12);
+	--pimaichi-glass: rgba(139,92,246,0.1);
+	--pimaichi-danger: #ef4444;
+	--pimaichi-success: #22c55e;
+	--pimaichi-gradient: linear-gradient(135deg, #8b5cf6, #6d28d9);
 }
 
 body {
@@ -177,8 +176,8 @@ body {
    ============================================================ */
 
 .glass {
-	background: var(--onyx-glass-bg);
-	border: 1px solid var(--onyx-glass-border);
+	background: var(--pimaichi-glass);
+	border: 1px solid var(--pimaichi-border);
 	backdrop-filter: blur(16px);
 	-webkit-backdrop-filter: blur(16px);
 }
@@ -190,10 +189,12 @@ body {
 .text-gradient-brand {
 	background: linear-gradient(
 		135deg,
-		var(--onyx-brand) 0%,
-		var(--onyx-accent) 100%
+		var(--pimaichi-accent) 0%,
+		var(--pimaichi-accent-hover) 100%
 	);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
 }
+
+

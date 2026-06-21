@@ -11,47 +11,44 @@ interface PricingTier {
 const TIERS: PricingTier[] = [
 	{
 		name: "Basic",
-		price: 190000,
+		price: 5,
 		features: [
-			"1 mailbox",
-			"5GB storage",
-			"Basic email features",
-			"Standard support",
-			"Email forwarding",
+			"Access to public posts",
+			"Basic content feed",
+			"Community comments",
+			"Vietnamese language support",
 		],
 	},
 	{
-		name: "Pro",
-		price: 490000,
+		name: "Premium",
+		price: 10,
 		features: [
-			"5 mailboxes",
-			"50GB storage",
-			"Media upload & sharing",
-			"Custom domain support",
+			"All Basic features",
+			"Exclusive subscriber content",
+			"Direct messaging with creator",
 			"Priority support",
-			"Content monetization",
+			"Early access to new content",
 		],
 		highlighted: true,
 	},
 	{
-		name: "Premium",
-		price: 990000,
+		name: "PPV Access",
+		price: 0,
 		features: [
-			"20 mailboxes",
-			"200GB storage",
-			"All Pro features",
-			"AI-powered replies",
-			"Advanced analytics",
-			"Content gating & PPV",
-			"Dedicated support",
+			"$1–7 per post, pay as you go",
+			"Unlock any locked content",
+			"No monthly commitment",
+			"Access to premium media sets",
+			"One-time payment per unlock",
 		],
 	},
 ]
 
-function formatVnd(amount: number) {
-	return new Intl.NumberFormat("vi-VN", {
+function formatUsd(amount: number) {
+	if (amount === 0) return "—"
+	return new Intl.NumberFormat("en-US", {
 		style: "currency",
-		currency: "VND",
+		currency: "USD",
 		maximumFractionDigits: 0,
 	}).format(amount)
 }
@@ -106,7 +103,7 @@ export default function PricingTable({
 						{/* Price */}
 						<div className="mb-6">
 							<span className="text-3xl font-bold text-kumo-default">
-								{formatVnd(tier.price)}
+								{formatUsd(tier.price)}
 							</span>
 							<span className="ml-1 text-sm text-kumo-subtle">/month</span>
 						</div>
