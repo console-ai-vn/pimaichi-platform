@@ -1,15 +1,11 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "onyx-email",
+	"name": "pimaichi-platform",
 	"compatibility_date": "2025-11-28",
 	"main": "./workers/app.ts",
 	"routes": [
 		{
-			"pattern": "box.onyx.com.vn",
-			"custom_domain": true,
-		},
-		{
-			"pattern": "start.onyx.com.vn",
+			"pattern": "pimaichi.local",
 			"custom_domain": true,
 		},
 	],
@@ -20,25 +16,19 @@
 	"vars": {
 		// TEAM_DOMAIN may be the base Access URL or the full /cdn-cgi/access/certs URL.
 		// The worker now fails closed outside local development if Access is not configured.
-		"DOMAINS": "onyx.com.vn",
-		"EMAIL_ADDRESSES": ["admin@onyx.com.vn", "test@onyx.com.vn"],
-		"ACCESS_EMAIL_ADDRESSES": ["ceo@bdsmetro.com", "admin@onyx.com.vn"],
+		"DOMAINS": "pimaichi.local",
+		"EMAIL_ADDRESSES": [],
+		"ACCESS_EMAIL_ADDRESSES": [],
 		"CF_ACCOUNT_ID": "a23f698a1f594da1a6fb657c5bea74a8",
 		"ACCESS_OTP_LIST_ID": "4304b973-26ff-417b-9fac-254ebcbda942",
 		"CF_API_EMAIL": "ceo@bdsmetro.com",
 		"TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
 	},
-	"send_email": [
-		{
-			"name": "EMAIL",
-			"remote": true,
-		},
-	],
 	"r2_buckets": [
 		{
 			"binding": "BUCKET",
-			"bucket_name": "onyx-email",
-			"preview_bucket_name": "onyx-email",
+			"bucket_name": "pimaichi-platform",
+			"preview_bucket_name": "pimaichi-platform",
 		},
 	],
 	// Secrets to set via `wrangler secret put`:
@@ -51,23 +41,8 @@
 	//   CF_STREAM_SIGNING_KEY — Base64-encoded HS256 key for Stream signed URLs
 	//   SEPA_API_KEY — SePay API key for VietQR generation
 	//   SEPA_WEBHOOK_SECRET — SePay webhook HMAC secret
-	"ai": {
-		"binding": "AI",
-	},
 	"durable_objects": {
 		"bindings": [
-			{
-				"name": "MAILBOX",
-				"class_name": "MailboxDO",
-			},
-			{
-				"name": "EMAIL_AGENT",
-				"class_name": "EmailAgent",
-			},
-			{
-				"name": "EMAIL_MCP",
-				"class_name": "EmailMCP",
-			},
 			{
 				"name": "ORG_FEED",
 				"class_name": "OrgFeedDO",
@@ -87,18 +62,6 @@
 		],
 	},
 	"migrations": [
-		{
-			"tag": "v1",
-			"new_sqlite_classes": ["MailboxDO"],
-		},
-		{
-			"tag": "v2",
-			"new_sqlite_classes": ["EmailAgent"],
-		},
-		{
-			"tag": "v3",
-			"new_sqlite_classes": ["EmailMCP"],
-		},
 		{
 			"tag": "v4",
 			"new_sqlite_classes": ["OrgFeedDO"],
