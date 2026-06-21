@@ -49,4 +49,16 @@ export const paymentMigrations: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
         `,
 	},
+	{
+		name: "2_payment_link_map",
+		sql: `
+            CREATE TABLE IF NOT EXISTS payment_link_map (
+                payment_link_id TEXT PRIMARY KEY,
+                mailbox_id TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_payment_link_map_mailbox ON payment_link_map(mailbox_id);
+        `,
+	},
 ]

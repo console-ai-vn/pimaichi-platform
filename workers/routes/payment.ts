@@ -2,9 +2,9 @@ import { Hono } from "hono"
 import { z } from "zod"
 import { normalizeEmail } from "../lib/access"
 import { getPaymentStub } from "../lib/payment-stub"
-import { generateVietQR, verifyWebhook, parseWebhookEvent } from "../lib/sepay"
-import { acceptStripeWebhook } from "../lib/stripe"
+import { createPaymentLink, verifyWebhookData } from "../lib/payos"
 import type { AccessVariables, Env } from "../types"
+import type { PaymentDO } from "../durableObject/payment"
 
 type PaymentContext = {
 	Bindings: Env
@@ -24,8 +24,13 @@ const CheckoutBody = z.object({
 	tier: z.enum(["basic", "pro", "premium"]),
 })
 
+function getGlobalPaymentStub(env: Env) {
+	const id = env.PAYMENT.idFromName("__payment_links__")
+	return env.PAYMENT.get(id) as unknown as DurableObjectStub<PaymentDO>
+}
+
 // POST /api/v1/payments/checkout
-app.post("/api/v1/payments/checkout", async (c) => {
+app.post("/checkout", async (c) => {
 	let body: z.infer<typeof CheckoutBody>
 	try {
 		body = CheckoutBody.parse(await c.req.json())
@@ -37,44 +42,48 @@ app.post("/api/v1/payments/checkout", async (c) => {
 	const amount = TIERS[body.tier]
 	const stub = getPaymentStub(c.env, mailboxId)
 
-	// Block duplicate subscriptions (any status except cancelled)
 	const existing = await stub.getSubscription(mailboxId)
 	if (existing && existing.status !== "cancelled") {
 		return c.json({ error: `Subscription already exists with status: ${existing.status}` }, 409)
 	}
 
-	const description = `ONYX ${body.tier} subscription for ${mailboxId}`
+	const description = `${body.tier}`
+	const origin = new URL(c.req.url).origin
+	const cancelUrl = `${origin}/pricing`
+	const returnUrl = `${origin}/checkout?mailboxId=${encodeURIComponent(mailboxId)}&tier=${body.tier}`
 
-	let qrCode: string
-	let txnId: string
+	let paymentResult
 	try {
-		const result = await generateVietQR(c.env, amount, description)
-		qrCode = result.qrCode
-		txnId = result.txnId
+		paymentResult = await createPaymentLink(c.env, amount, description, cancelUrl, returnUrl)
 	} catch (error) {
-		return c.json({ error: error instanceof Error ? error.message : "Failed to generate payment QR" }, 500)
+		return c.json({ error: error instanceof Error ? error.message : "Failed to create payment link" }, 500)
 	}
 
-	// Create subscription and invoice in one flow
 	const subscription = await stub.createSubscription(mailboxId, body.tier, amount)
-	const invoice = await stub.createInvoice(subscription.id, mailboxId, amount, "sepay", qrCode)
+	const invoice = await stub.createInvoice(subscription.id, mailboxId, amount, "payos", paymentResult.qrImageUrl)
+
+	await stub.setProviderTxnId(invoice.id, paymentResult.paymentLinkId)
+
+	const globalStub = getGlobalPaymentStub(c.env)
+	await globalStub.storePaymentLinkId(paymentResult.paymentLinkId, mailboxId)
 
 	return c.json({
 		subscription,
 		invoice,
-		qrCode,
+		checkoutUrl: paymentResult.checkoutUrl,
+		qrCode: paymentResult.qrImageUrl,
+		qrRaw: paymentResult.qrCode,
 		amount,
 		tier: body.tier,
+		bin: paymentResult.bin,
+		accountNumber: paymentResult.accountNumber,
+		accountName: paymentResult.accountName,
 	}, 201)
 })
 
 // GET /api/v1/payments/invoice/:id
-app.get("/api/v1/payments/invoice/:id", async (c) => {
+app.get("/invoice/:id", async (c) => {
 	const invoiceId = c.req.param("id")!
-	// We need mailboxId to get the right DO, but invoiceId doesn't encode it.
-	// For this simple implementation, we search all known DOs. In practice,
-	// the frontend polls with mailboxId available.
-	// Alternative: accept ?mailboxId= query param.
 	const mailboxId = normalizeEmail(c.req.query("mailboxId") || "")
 	if (!mailboxId) {
 		return c.json({ error: "mailboxId query param required" }, 400)
@@ -91,94 +100,68 @@ app.get("/api/v1/payments/invoice/:id", async (c) => {
 	return c.json({ invoice, subscription })
 })
 
-// POST /api/v1/payments/webhook/sepay
-app.post("/api/v1/payments/webhook/sepay", async (c) => {
-	const body = await c.req.text()
-	const signature = c.req.header("x-sepay-signature") || ""
-	const secret = c.env.SEPAY_WEBHOOK_SECRET
-
-	if (!secret) {
-		return c.json({ error: "Webhook secret not configured" }, 500)
+// POST /api/v1/payments/webhook
+app.post("/webhook", async (c) => {
+	const rawBody = await c.req.json().catch(() => null)
+	if (!rawBody) {
+		return c.json({ error: "Invalid JSON body" }, 400)
 	}
 
-	const valid = await verifyWebhook(body, signature, secret)
-	if (!valid) {
-		return c.json({ error: "Invalid signature" }, 403)
+	let webhookData
+	try {
+		webhookData = await verifyWebhookData(c.env, rawBody)
+	} catch {
+		return c.json({ error: "Invalid webhook signature" }, 403)
 	}
 
-	const event = parseWebhookEvent(body)
-	const idempotencyKey = `sepay:${event.txnId}`
-
-	// Parse description to extract mailboxId
-	// Format: "ONYX {tier} subscription for {mailboxId}"
-	const descMatch = event.description.match(/for\s+(.+)$/i)
-	const mailboxId = descMatch ? normalizeEmail(descMatch[1]) : null
-
-	if (!mailboxId) {
-		return c.json({ error: "Cannot determine mailbox from description" }, 400)
+	if (webhookData.code !== "00") {
+		return c.json({ status: "payment_failed", desc: webhookData.desc }, 200)
 	}
 
-	const stub = getPaymentStub(c.env, mailboxId)
+	const { paymentLinkId, amount, reference, transactionDateTime } = webhookData
+	if (!paymentLinkId) {
+		return c.json({ error: "Missing paymentLinkId in webhook" }, 400)
+	}
 
-	// Check idempotency
-	const logResult = await stub.webhookLog(idempotencyKey, "sepay", event.type, body)
+	const idempotencyKey = `payos:${paymentLinkId}:${reference}`
+	const globalStub = getGlobalPaymentStub(c.env)
+
+	const logResult = await globalStub.webhookLog(idempotencyKey, "payos", "payment.success", JSON.stringify(rawBody))
 	if (logResult.duplicate) {
 		return c.json({ status: "duplicate" }, 200)
 	}
 
-	// Only handle successful transfers
-	if (event.type !== "transfer" && event.type !== "transaction.success") {
-		return c.json({ status: "ignored", eventType: event.type }, 200)
+	const mailboxId = await globalStub.lookupPaymentLinkId(paymentLinkId)
+	if (!mailboxId) {
+		return c.json({ error: "No pending invoice found for this payment link" }, 404)
 	}
 
-	// Find subscription for this mailbox
-	const subscription = await stub.getSubscription(mailboxId)
-	if (!subscription || subscription.status !== "pending") {
-		// Maybe it's a renewal — check for active subscription + pending invoice
-		const invoices = await stub.getInvoices(mailboxId)
-		const pendingInvoice = invoices.find((inv) => inv.status === "pending")
-
-		if (pendingInvoice && subscription?.status === "active") {
-			// Verify amount matches (prevent underpayment)
-			const paidAmount = Number(event.amount)
-			if (paidAmount < pendingInvoice.amount) {
-				return c.json({ error: `Insufficient amount: received ${paidAmount}, expected ${pendingInvoice.amount}` }, 400)
-			}
-			await stub.activateSubscription(subscription.id, event.txnId)
-			return c.json({ status: "renewal_activated" }, 200)
-		}
-
-		return c.json({ status: "no_pending_subscription" }, 200)
-	}
-
-	// Verify amount matches for initial payment
+	const stub = getPaymentStub(c.env, mailboxId)
 	const invoices = await stub.getInvoices(mailboxId)
-	const pendingInvoice = invoices.find((inv) => inv.status === "pending" && inv.subscriptionId === subscription.id)
-	const paidAmount = Number(event.amount)
+	const pendingInvoice = invoices.find(
+		(inv) => inv.providerTxnId === paymentLinkId && inv.status === "pending",
+	)
 
-	if (pendingInvoice && paidAmount < pendingInvoice.amount) {
-		return c.json({ error: `Insufficient amount: received ${paidAmount}, expected ${pendingInvoice.amount}` }, 400)
+	if (!pendingInvoice) {
+		return c.json({ status: "no_pending_invoice" }, 200)
 	}
 
-	await stub.activateSubscription(subscription.id, event.txnId)
-	return c.json({ status: "activated" }, 200)
-})
-
-// POST /api/v1/payments/webhook/stripe
-app.post("/api/v1/payments/webhook/stripe", async (c) => {
-	const body = await c.req.text()
-	const signature = c.req.header("stripe-signature") || ""
-	const secret = c.env.STRIPE_WEBHOOK_SECRET || ""
-
-	const result = acceptStripeWebhook(body, signature, secret)
-	if (!result.ok) {
-		return c.json({ error: result.error }, 501)
+	if (amount < pendingInvoice.amount) {
+		return c.json({ error: `Insufficient amount: received ${amount}, expected ${pendingInvoice.amount}` }, 400)
 	}
-	return c.json({ status: "ok" }, 200)
+
+	const subscription = await stub.getSubscription(mailboxId)
+	if (!subscription) {
+		return c.json({ error: "No subscription found" }, 404)
+	}
+
+	await stub.activateSubscription(subscription.id, reference)
+	await stub.settleInvoice(pendingInvoice.id, reference)
+	return c.json({ status: "activated", transactionDateTime }, 200)
 })
 
 // GET /api/v1/payments/subscription/:mailboxId
-app.get("/api/v1/payments/subscription/:mailboxId", async (c) => {
+app.get("/subscription/:mailboxId", async (c) => {
 	const mailboxId = normalizeEmail(c.req.param("mailboxId")!)
 	const stub = getPaymentStub(c.env, mailboxId)
 	const subscription = await stub.getSubscription(mailboxId)
@@ -189,7 +172,7 @@ app.get("/api/v1/payments/subscription/:mailboxId", async (c) => {
 })
 
 // POST /api/v1/payments/subscription/:mailboxId/cancel
-app.post("/api/v1/payments/subscription/:mailboxId/cancel", async (c) => {
+app.post("/subscription/:mailboxId/cancel", async (c) => {
 	const mailboxId = normalizeEmail(c.req.param("mailboxId")!)
 	const stub = getPaymentStub(c.env, mailboxId)
 	const subscription = await stub.getSubscription(mailboxId)
@@ -207,7 +190,7 @@ app.post("/api/v1/payments/subscription/:mailboxId/cancel", async (c) => {
 })
 
 // GET /api/v1/payments/invoices/:mailboxId
-app.get("/api/v1/payments/invoices/:mailboxId", async (c) => {
+app.get("/invoices/:mailboxId", async (c) => {
 	const mailboxId = normalizeEmail(c.req.param("mailboxId")!)
 	const stub = getPaymentStub(c.env, mailboxId)
 	const invoices = await stub.getInvoices(mailboxId)

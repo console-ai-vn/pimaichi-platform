@@ -155,7 +155,7 @@ export class PaymentDO extends DurableObject<Env> {
 
 		const invoices: PaymentInvoice[] = []
 		for (const row of expiringRows) {
-			const invoice = await this.createInvoice(row.id, row.mailbox_id, row.amount, "sepay")
+			const invoice = await this.createInvoice(row.id, row.mailbox_id, row.amount, "payos")
 			invoices.push(invoice)
 		}
 
@@ -232,6 +232,31 @@ export class PaymentDO extends DurableObject<Env> {
 
 	async getInvoice(invoiceId: string): Promise<PaymentInvoice | null> {
 		return this.getInvoiceByRowId(invoiceId)
+	}
+
+	async setProviderTxnId(invoiceId: string, txnId: string): Promise<void> {
+		this.ctx.storage.sql.exec(
+			`UPDATE invoices SET provider_txn_id = ?1 WHERE id = ?2`,
+			txnId, invoiceId,
+		)
+	}
+
+	async storePaymentLinkId(paymentLinkId: string, mailboxId: string): Promise<void> {
+		this.ctx.storage.sql.exec(
+			`INSERT OR REPLACE INTO payment_link_map (payment_link_id, mailbox_id, created_at)
+			 VALUES (?1, ?2, ?3)`,
+			paymentLinkId, mailboxId, new Date().toISOString(),
+		)
+	}
+
+	async lookupPaymentLinkId(paymentLinkId: string): Promise<string | null> {
+		const rows = [
+			...this.ctx.storage.sql.exec(
+				`SELECT mailbox_id FROM payment_link_map WHERE payment_link_id = ?1`,
+				paymentLinkId,
+			),
+		] as Array<{ mailbox_id: string }>
+		return rows.length > 0 ? rows[0].mailbox_id : null
 	}
 
 	async webhookLog(

@@ -174,7 +174,7 @@ app.post("/api/v1/inventory/purchase", async (c) => {
 		subscription.id,
 		item.creatorMailboxId,
 		item.price,
-		"sepay",
+		"payos",
 	)
 
 	// Grant the item immediately after purchase (will be consumed later)

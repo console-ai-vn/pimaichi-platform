@@ -424,9 +424,14 @@ const api = {
 		post<{
 			subscription: PaymentSubscription
 			invoice: PaymentInvoice
+			checkoutUrl: string
 			qrCode: string
+			qrRaw: string
 			amount: number
 			tier: string
+			bin: string
+			accountNumber: string
+			accountName: string
 		}>("/api/v1/payments/checkout", payload),
 	getInvoice: (invoiceId: string, mailboxId: string) =>
 		get<{

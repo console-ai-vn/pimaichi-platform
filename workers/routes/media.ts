@@ -244,4 +244,40 @@ app.get("/api/v1/media/signed-stream/:videoId", async (c) => {
 	}
 });
 
+// --- Placeholder images for feed / stories (demo mode) ---
+
+const PLACEHOLDER_IMAGES: Record<string, { bg: string; label: string }> = {
+  "1": { bg: "#FF6B35", label: "Sunset Beach" },
+  "2": { bg: "#1A1A2E", label: "City Night" },
+  "3": { bg: "#8B4513", label: "Coffee Morning" },
+  "4": { bg: "#2D3436", label: "Fitness Gym" },
+  "5": { bg: "#2ECC71", label: "Mountain Travel" },
+  "6": { bg: "#E74C3C", label: "Gourmet Food" },
+  "7": { bg: "#9B59B6", label: "Art Studio" },
+  "8": { bg: "#3498DB", label: "Music Session" },
+}
+
+app.get("/api/v1/media/placeholder/:id", async (c) => {
+  const id = c.req.param("id")!
+  const info = PLACEHOLDER_IMAGES[id]
+  if (!info) return c.body(null, 404)
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+    <rect width="400" height="400" fill="${info.bg}"/>
+    <text x="200" y="160" text-anchor="middle" dominant-baseline="central"
+          font-family="Arial,sans-serif" font-size="40" fill="#FFFFFF">${info.label}</text>
+    <text x="200" y="240" text-anchor="middle" dominant-baseline="central"
+          font-family="Arial,sans-serif" font-size="16" fill="#FFFFFF" opacity="0.7">Photo by Demo Creator</text>
+  </svg>`
+
+  return new Response(svg, {
+    headers: {
+      "Content-Type": "image/svg+xml",
+      "Cache-Control": "public, max-age=3600",
+    },
+  })
+})
+
+
+
 export { app };

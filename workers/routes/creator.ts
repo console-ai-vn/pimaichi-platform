@@ -1,4 +1,5 @@
 import { Hono } from "hono"
+import { profileAvatarKey, profileCoverKey } from "../lib/profile-avatar"
 import type { AccessVariables, Env } from "../types"
 
 type CreatorContext = {
@@ -128,9 +129,25 @@ app.get("/api/v1/creator/:creatorId/content", async (c) => {
 		const page = parseInt(c.req.query("page") || "1", 10) || 1
 		const limit = parseInt(c.req.query("limit") || "20", 10) || 20
 
+		const DEMO_ITEMS = [
+			{ id: "post-1", thumbnailUrl: "/api/v1/media/placeholder/1", title: "Buổi sáng mới 🌸", tier: "public", isUnlocked: true, createdAt: new Date().toISOString() },
+			{ id: "post-2", thumbnailUrl: "/api/v1/media/placeholder/2", title: "Dạo phố cùng em 🌆", tier: "subscribers", isUnlocked: false, createdAt: new Date(Date.now() - 3600000).toISOString() },
+			{ id: "post-3", thumbnailUrl: "/api/v1/media/placeholder/3", title: "Bộ ảnh riêng tư 💜", tier: "ppv", isUnlocked: false, keyPrice: 9.99, previewUrl: "/api/v1/media/placeholder/3", createdAt: new Date(Date.now() - 7200000).toISOString() },
+			{ id: "post-4", thumbnailUrl: "/api/v1/media/placeholder/4", title: "Chiều nay mặc gì? 🛍️", tier: "public", isUnlocked: true, createdAt: new Date(Date.now() - 10800000).toISOString() },
+			{ id: "post-5", thumbnailUrl: null, title: "Cảm ơn 50 subscribers! ❤️", tier: "subscribers", isUnlocked: false, createdAt: new Date(Date.now() - 14400000).toISOString() },
+			{ id: "post-6", thumbnailUrl: null, title: "Video hậu trường: Buổi chụp mới 🎬", tier: "ppv", isUnlocked: false, keyPrice: 14.99, createdAt: new Date(Date.now() - 18000000).toISOString() },
+			{ id: "post-7", thumbnailUrl: "/api/v1/media/placeholder/7", title: "Q&A cùng Pimaichi 💬", tier: "public", isUnlocked: true, createdAt: new Date(Date.now() - 21600000).toISOString() },
+			{ id: "post-8", thumbnailUrl: null, title: "Tâm sự cùng subscribers 🥰", tier: "subscribers", isUnlocked: false, createdAt: new Date(Date.now() - 25200000).toISOString() },
+		]
+
+		const filtered = creatorId !== "pimaichi1003" && creatorId !== "demo@onyx.com.vn"
+			? [] : DEMO_ITEMS
+		const start = (page - 1) * limit
+		const paged = filtered.slice(start, start + limit)
+
 		return c.json({
-			items: [],
-			totalCount: 0,
+			items: paged,
+			totalCount: filtered.length,
 			page,
 			limit,
 		})
@@ -144,7 +161,7 @@ app.get("/api/v1/creator/:creatorId/content", async (c) => {
 app.get("/api/v1/creator/:creatorId/avatar", async (c) => {
 	try {
 		const creatorId = decodeURIComponent(c.req.param("creatorId")!)
-		const avatarKey = `profile/avatars/${creatorId.toLowerCase()}`
+		const avatarKey = profileAvatarKey(creatorId)
 		const obj = await c.env.BUCKET.get(avatarKey)
 		if (!obj) return c.body(null, 404)
 
@@ -162,7 +179,7 @@ app.get("/api/v1/creator/:creatorId/avatar", async (c) => {
 app.get("/api/v1/creator/:creatorId/cover", async (c) => {
 	try {
 		const creatorId = decodeURIComponent(c.req.param("creatorId")!)
-		const coverKey = `profile/covers/${creatorId.toLowerCase()}`
+		const coverKey = profileCoverKey(creatorId)
 		const obj = await c.env.BUCKET.get(coverKey)
 		if (!obj) return c.body(null, 404)
 

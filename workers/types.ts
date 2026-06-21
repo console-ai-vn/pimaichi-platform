@@ -11,10 +11,9 @@ export interface Env extends Cloudflare.Env {
 	CF_API_TOKEN?: string;
 	CF_API_EMAIL?: string;
 	ACCESS_OTP_LIST_ID?: string;
-	SEPAY_API_KEY?: string;
-	SEPAY_WEBHOOK_SECRET?: string;
-	STRIPE_SECRET?: string;
-	STRIPE_WEBHOOK_SECRET?: string;
+	PAYOS_CLIENT_ID?: string;
+	PAYOS_API_KEY?: string;
+	PAYOS_CHECKSUM_KEY?: string;
 	PAYMENT: DurableObjectNamespace;
 	INVENTORY: DurableObjectNamespace;
 	LIVE: DurableObjectNamespace;

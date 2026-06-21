@@ -76,6 +76,7 @@ export default function CheckoutRoute() {
   )
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [checkoutAmount, setCheckoutAmount] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [paymentComplete, setPaymentComplete] = useState(false)
@@ -96,6 +97,7 @@ export default function CheckoutRoute() {
 
         setInvoiceId(result.invoice.id)
         setQrCode(result.qrCode)
+        setCheckoutUrl(result.checkoutUrl)
         setCheckoutAmount(result.amount)
         setCurrentStep(1)
       } catch (err) {
@@ -160,6 +162,7 @@ export default function CheckoutRoute() {
             onClick={() => {
               setCurrentStep(0)
               setQrCode(null)
+              setCheckoutUrl(null)
               setInvoiceId(null)
               setSelectedTier(null)
               setError(null)
@@ -258,18 +261,33 @@ export default function CheckoutRoute() {
                   Complete Your Payment
                 </h1>
                 <p className="mb-6 text-sm text-kumo-subtle">
-                  Scan the QR code with your banking app to activate your{" "}
+                  Choose how to pay for your{" "}
                   <span className="font-semibold capitalize text-kumo-default">
                     {selectedTier}
                   </span>{" "}
                   plan.
                 </p>
+
+                {checkoutUrl && (
+                  <a
+                    href={checkoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-kumo-brand px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-kumo-brand/90"
+                  >
+                    Pay Online — {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(checkoutAmount)}
+                  </a>
+                )}
+
+                <div className="mb-2 text-xs text-kumo-subtle">Or scan VietQR with your banking app</div>
+
                 <PaymentQR
                   qrCode={qrCode}
                   amount={checkoutAmount}
-                  description={`ONYX ${selectedTier} subscription for ${mailboxId}`}
+                  description={`PIMAICHI ${selectedTier} subscription`}
                   onExpired={() => {
                     setQrCode(null)
+                    setCheckoutUrl(null)
                     setInvoiceId(null)
                     setSelectedTier(null)
                     setCurrentStep(0)
@@ -288,6 +306,7 @@ export default function CheckoutRoute() {
                   className="mt-4"
                   onClick={() => {
                     setQrCode(null)
+                    setCheckoutUrl(null)
                     setInvoiceId(null)
                     setSelectedTier(null)
                     setCurrentStep(0)
@@ -444,20 +463,35 @@ export default function CheckoutRoute() {
 
           {/* Step 1: Payment QR */}
           {currentStep === 1 && qrCode && (
-            <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="flex-1 flex flex-col items-center justify-center px-4">
               <h1 className="mb-2 text-lg font-bold text-kumo-default text-center">
                 Complete Your Payment
               </h1>
               <p className="mb-4 text-sm text-kumo-subtle text-center">
-                Scan with your banking app
+                Choose how to pay for your{" "}
+                <span className="font-semibold capitalize text-kumo-default">{selectedTier}</span> plan
               </p>
+
+              {checkoutUrl && (
+                <a
+                  href={checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-kumo-brand px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-kumo-brand/90"
+                >
+                  Pay Online — {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(checkoutAmount)}
+                </a>
+              )}
+
+              <div className="mb-3 text-xs text-kumo-subtle text-center">Or scan VietQR with your banking app</div>
 
               <PaymentQR
                 qrCode={qrCode}
                 amount={checkoutAmount}
-                description={`ONYX ${selectedTier} subscription`}
+                description={`PIMAICHI ${selectedTier} subscription`}
                 onExpired={() => {
                   setQrCode(null)
+                  setCheckoutUrl(null)
                   setInvoiceId(null)
                   setSelectedTier(null)
                   setCurrentStep(0)
@@ -472,12 +506,10 @@ export default function CheckoutRoute() {
                 </div>
               )}
 
-              {/* Manual confirmation button */}
               <button
                 type="button"
                 className="mt-4 text-sm text-kumo-brand font-medium hover:underline"
                 onClick={() => {
-                  // Trigger a refetch immediately
                   invoiceQuery.refetch()
                 }}
               >

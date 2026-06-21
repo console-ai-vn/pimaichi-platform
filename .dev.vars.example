@@ -8,7 +8,16 @@ TEAM_DOMAIN=https://your-team.cloudflareaccess.com
 # Optional wrangler vars or save via /admin/signups UI:
 #   CF_ACCOUNT_ID, ACCESS_OTP_LIST_ID (Zero Trust EMAIL list used by Access policy)
 
+# payOS payment integration:
+# Get these from https://merchant.payos.vn
+PAYOS_CLIENT_ID=
+PAYOS_API_KEY=
+PAYOS_CHECKSUM_KEY=
+
 # Production setup:
 #   wrangler secret put POLICY_AUD
 #   wrangler secret put TEAM_DOMAIN
+#   wrangler secret put PAYOS_CLIENT_ID
+#   wrangler secret put PAYOS_API_KEY
+#   wrangler secret put PAYOS_CHECKSUM_KEY
 # Do not commit real values to wrangler.jsonc vars.
